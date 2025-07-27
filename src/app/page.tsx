@@ -2,9 +2,10 @@
 import { useState, ChangeEvent, useMemo } from 'react';
 import { Result, PlayerStat } from './api/upload/route';
 import Accordion from './components/Accordion';
-import ExpandableList from './components/ExpandableList';
+import SummaryCard from './components/SummaryCard';
 import LifeTimeline from './components/LifeTimeline';
 import Modal from './components/Modal';
+import Podium from './components/Podium';
 
 export default function Home() {
   const [results, setResults] = useState<Result | null>(null);
@@ -14,6 +15,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('player'); // 'player' or 'guild'
   const [isLoading, setIsLoading] = useState(false); // New loading state
   const [playerFilterName, setPlayerFilterName] = useState(''); // New state for player name filter
+  const [isDragging, setIsDragging] = useState(false); // State to track if a file is being dragged over
 
   // --- Existing Logic ---
   const processLogData = async (file: File) => {
@@ -41,6 +43,35 @@ export default function Home() {
     if (file) processLogData(file);
   };
 
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processLogData(files[0]);
+    }
+  };
+
   const handleTextareaSubmit = () => {
     if (!logContent.trim()) return;
     const file = new File([logContent], "log.txt", { type: "text/plain" });
@@ -52,11 +83,6 @@ export default function Home() {
   };
 
   // --- Derived State ---
-  const uniqueGuilds = useMemo(() => 
-    results ? [...new Set(results.playerResults.map(p => p.guildName).filter(g => g))].sort() : [],
-    [results]
-  );
-
   const filteredPlayerResults = useMemo(() =>
     results
       ? (selectedGuild
@@ -68,14 +94,18 @@ export default function Home() {
     [results, selectedGuild, playerFilterName] // Add playerFilterName to dependencies
   );
 
-  const filteredGuildResults = useMemo(() =>
-    results
-      ? (selectedGuild
-        ? results.guildResults.filter(guild => guild.name === selectedGuild)
-        : results.guildResults
-      ).sort((a, b) => b.totalPoints - a.totalPoints)
-    : [],
-    [results, selectedGuild]
+  const topPlayers = useMemo(() => 
+    results && results.playerResults.length > 0
+      ? results.playerResults.sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3)
+      : [],
+    [results]
+  );
+
+  const topGuilds = useMemo(() => 
+    results && results.guildResults.length > 0
+      ? results.guildResults.sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3)
+      : [],
+    [results]
   );
 
   const mvpPlayer = useMemo(() => 
@@ -118,7 +148,13 @@ export default function Home() {
               htmlFor="file-upload"
               className="cursor-pointer bg-white rounded-xl shadow-lg p-8 w-full max-w-lg text-center transition-transform transform hover:scale-105 duration-300"
             >
-              <div className="border-4 border-dashed border-gray-200 rounded-lg p-10">
+              <div 
+                className={`border-4 border-dashed ${isDragging ? 'border-amber-500 bg-amber-50' : 'border-gray-200'} rounded-lg p-10 transition-colors duration-300`}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+              >
                 <p className="text-gray-500 text-lg">
                   Drag & drop your file here or click to browse
                 </p>
@@ -171,7 +207,7 @@ export default function Home() {
             </div>
           </div>
         )}
-        <nav className="sticky top-0 z-50 h-20 bg-gradient-to-r from-blue-200 to-purple-200 flex items-center justify-between px-8 py-4 shadow-md">
+        <nav className="top-0 z-50 h-20 bg-gradient-to-r from-blue-200 to-purple-200 flex items-center justify-between px-8 py-4 shadow-md">
           <div className="left-section">
             <h1 className="font-bold text-2xl text-gray-800 tracking-wide">Siege Stats</h1>
           </div>
@@ -186,223 +222,292 @@ export default function Home() {
         </nav>
         <div className="bg-gradient-to-br from-rose-100 to-teal-100 text-gray-800 font-sans max-w-screen-xl mx-auto bg-gray-50 font-sans">
           <input id="file-upload" type="file" className="hidden" onChange={handleFileUpload} />
-          <main className="flex mt-8 gap-8 px-8 pb-8">
-            <aside className="w-1/4 flex-none">
-              <div className="bg-white p-4 rounded-2xl shadow-lg space-y-6">
-                {/* Winner Guild Display */}
-                {results && results.guildResults.length > 0 && (
-                  <div className="bg-yellow-100 p-4 rounded-xl shadow-md">
-                    <h3 className="font-bold text-lg text-yellow-800 mb-3">Winner Guild</h3>
-                    <div className="flex items-center gap-4">
-                      <img src="/images/crown.png" alt="Crown Icon" className="w-8 h-8" />
-                      <p className="font-semibold text-lg text-gray-800">{results.guildResults[0].name}</p>
-                    </div>
-                  </div>
-                )}
-
-                {mvpPlayer && (
-                  <div className="bg-yellow-100 p-4 rounded-xl shadow-md">
-                    <h3 className="font-bold text-lg text-yellow-800 mb-3">MVP Player</h3>
-                    <div className="flex items-center gap-4">
-                      <img src="/images/mvp.png" alt="MVP Icon" className="w-8 h-8" />
-                      <div>
-                        <p className="font-semibold text-lg text-gray-800">{mvpPlayer.name}</p>
-                        <p className="text-sm text-gray-600">{mvpPlayer.guildName}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <button onClick={() => mvpPlayer && setSelectedPlayer(mvpPlayer)} disabled={!mvpPlayer} className="w-full py-3 rounded-full shadow-sm hover:shadow-md transition-all duration-200 ease-in-out bg-blue-200 text-blue-800 font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  View MVP Timeline
-                </button>
-              </div>
-            </aside>
-
-            <section className="w-3/4 flex-grow">
-              {/* Tab Buttons */}
-              <div className="flex">
-                <button
-                  className={`px-6 py-3 rounded-t-lg font-semibold ${activeTab === 'player' ? 'bg-white text-gray-800' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
-                  onClick={() => setActiveTab('player')}
-                >
-                  Player Stats
-                </button>
-                <button
-                  className={`px-6 py-3 rounded-t-lg font-semibold ${activeTab === 'guild' ? 'bg-white text-gray-800' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
-                  onClick={() => setActiveTab('guild')}
-                >
-                  Guild Stats
-                </button>
-              </div>
-
-              {/* Player Stats Tab Content */}
-              {activeTab === 'player' && (
-                <div className="bg-white p-6 rounded-b-2xl rounded-tr-2xl shadow-lg space-y-6">
-                  {/* Filter by Guild */}
-                  <div>
-                    <label htmlFor="guild-filter" className="block text-sm font-semibold text-gray-700 mb-2">Filter by Guild</label>
-                    <select id="guild-filter" value={selectedGuild} onChange={handleGuildFilterChange} className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all duration-200">
-                      <option value="">All Guilds</option>
-                      {uniqueGuilds.map(guild => <option key={guild} value={guild}>{guild}</option>)}
-                    </select>
-                  </div>
-                  <h2 className="font-bold text-xl text-gray-800 mb-4">Player Stats: Kill List</h2>
-                  {/* Player Name Filter */}
-                  <div className="mb-4">
-                    <label htmlFor="player-filter" className="block text-sm font-semibold text-gray-700 mb-2">Filter by Player Name</label>
-                    <input
-                      type="text"
-                      id="player-filter"
-                      value={playerFilterName}
-                      onChange={(e) => setPlayerFilterName(e.target.value)}
-                      placeholder="Search player..."
-                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all duration-200"
-                    />
-                  </div>
-                  <div className="space-y-4">
-                    {filteredPlayerResults.map(player => {
-                      const kdRatio = player.totalDeaths > 0 ? (player.totalKills / player.totalDeaths).toFixed(2) : player.totalKills.toFixed(2);
-                      return (
-                        <Accordion
-                          key={player.name}
-                          title={
-                            <div className="w-full flex justify-between items-center">
-                              <span className="font-semibold text-lg text-purple-800">{player.name} ({player.guildName})</span>
-                              <span className="text-purple-600 font-medium">{player.totalPoints} Points | {player.totalKills} Kills / {player.totalDeaths} Deaths ({kdRatio} K/D)</span>
-                            </div>
-                          }
-                        >
-                          <div className="pt-4 border-t border-gray-200">
-                            <h4 className="font-bold text-lg text-green-600 mb-3">Kills ({player.totalKills})</h4>
-                            <div className="font-semibold text-md text-green-600 mb-3">Summary each guild</div>
-                            <div className="grid grid-cols-1 pl-3 sm:grid-cols-2 gap-2 mb-3">
-                              {player.totalKillsEachGuild.map((kill: any, i: number) => (
-                                <div key={i} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100 transition-all hover:bg-green-100">
-                                  <span className="text-green-800 font-medium">{kill.guildName}</span>
-                                  <span className="font-bold text-green-600 bg-green-100 px-2.5 py-1 rounded-full">{kill.count}</span>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="font-semibold text-md text-green-600 mb-3">Summary each Player</div>
-                            <ExpandableList
-                              items={player.kills}
-                              renderItem={(kill: any, i: number) => (
-                                <li key={i} className="flex justify-between items-center bg-green-50 p-3 mb-1.5 rounded-lg border border-green-100 transition-all hover:shadow-sm hover:bg-green-100">
-                                  <span className="text-green-800 font-medium">{kill.name}</span>
-                                  <span className="font-bold text-green-600 bg-green-100 px-2.5 py-1 rounded-full">{kill.count}</span>
-                                </li>
-                              )}
-                            />
-                            <hr className="my-4 border-gray-200" />
-                            <div className="font-semibold text-md text-red-600 mb-3 mt-4">Killed By ({player.totalDeaths})</div>
-                            <div className="font-semibold text-md text-red-600 mb-3">Summary each guild</div>
-                            <div className="grid grid-cols-1 pl-3 sm:grid-cols-2 gap-2 mb-3">
-                              {player.totalDeathsEachGuild.map((kill: any, i: number) => (
-                                <div key={i} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100 transition-all hover:bg-red-100">
-                                  <span className="text-red-800 font-medium">{kill.guildName}</span>
-                                  <span className="font-bold text-red-600 bg-red-100 px-2.5 py-1 rounded-full">{kill.count}</span>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="font-semibold text-md text-red-600 mb-3">Summary each player</div>
-                            <ExpandableList
-                              items={player.killedBy}
-                              renderItem={(death: any, i: number) => (
-                                <li key={i} className="flex justify-between items-center bg-red-50 p-3 mb-1.5 rounded-lg border border-red-100 transition-all hover:shadow-sm hover:bg-red-100">
-                                  <span className="text-red-800 font-medium">{death.name}</span>
-                                  <span className="font-bold text-red-600 bg-red-100 px-2.5 py-1 rounded-full">{death.count}</span>
-                                </li>
-                              )}
-                            />
-                            <div className="text-center mt-4">
-                              <button
-                                onClick={() => setSelectedPlayer(player)}
-                                className="px-4 py-2 bg-purple-500 text-white font-semibold rounded-lg shadow-md hover:bg-purple-600 transition-all duration-300"
-                              >
-                                Show Timeline
-                              </button>
-                            </div>
-                          </div>
-                        </Accordion>
-                      )}
-                    )}
-                  </div>
-                </div>
+          <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+            <div className="flex flex-col md:flex-row items-start justify-center gap-8 w-full">
+              {/* Player Podium Section */}
+              {results && results.playerResults.length > 0 && (
+                <Podium
+                  title="Top 3 Players"
+                  type="player"
+                  positions={topPlayers.map(player => player ? {
+                    name: player.name,
+                    subtitle: player.guildName,
+                    points: player.totalPoints,
+                    extraStat: {
+                      label: `K/D`,
+                      value: `${player.totalKills}/${player.totalDeaths}`
+                    }
+                  } : null)}
+                />
               )}
 
-              {/* Guild Stats Tab Content */}
-              {activeTab === 'guild' && (
-                <div className="bg-white p-6 rounded-b-2xl rounded-tr-2xl shadow-lg space-y-6">
-                  {/* Filter by Guild */}
+              {/* Guild Podium Section */}
+              {results && results.guildResults.length > 0 && (
+                <Podium
+                  title="Top 3 Guilds"
+                  type="guild"
+                  positions={topGuilds.map(guild => guild ? {
+                    name: guild.name,
+                    points: guild.totalPoints,
+                    extraStat: {
+                      label: `K/D`,
+                      value: `${guild.totalKills}/${guild.totalDeaths}`
+                    }
+                  } : null)}
+                />
+              )}
+            </div>
+
+            {/* Tab Buttons */}
+            <div className="flex">
+              <button
+                className={`px-6 py-3 rounded-t-lg font-semibold ${activeTab === 'player' ? 'bg-white text-gray-800' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+                onClick={() => setActiveTab('player')}
+              >
+                Player Stats
+              </button>
+              <button
+                className={`px-6 py-3 rounded-t-lg font-semibold ${activeTab === 'guild' ? 'bg-white text-gray-800' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+                onClick={() => setActiveTab('guild')}
+              >
+                Guild Stats
+              </button>
+            </div>
+
+            {/* Player Stats Tab Content */}
+            {activeTab === 'player' && (
+              <div className="bg-white p-6 rounded-b-2xl rounded-tr-2xl shadow-lg space-y-6">
+                {/* Player Filter */}
+                <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="player-filter" className="block text-sm font-semibold text-gray-700 mb-2">Filter by Player Name</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        id="player-filter"
+                        placeholder="Enter player name..."
+                        value={playerFilterName}
+                        onChange={(e) => setPlayerFilterName(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all duration-200"
+                      />
+                      {playerFilterName && (
+                        <button
+                          onClick={() => setPlayerFilterName('')}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                          aria-label="Clear input"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <div>
                     <label htmlFor="guild-filter" className="block text-sm font-semibold text-gray-700 mb-2">Filter by Guild</label>
-                    <select id="guild-filter" value={selectedGuild} onChange={handleGuildFilterChange} className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all duration-200">
+                    <select
+                      id="guild-filter"
+                      value={selectedGuild}
+                      onChange={handleGuildFilterChange}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all duration-200"
+                    >
                       <option value="">All Guilds</option>
-                      {uniqueGuilds.map(guild => <option key={guild} value={guild}>{guild}</option>)}
+                      {results?.guildResults.map(guild => (
+                        <option key={guild.name} value={guild.name}>
+                          {guild.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
-                  <h2 className="font-bold text-xl text-gray-800 mb-4">Guild Stats</h2>
-                  <div className="space-y-4">
-                    {filteredGuildResults.map(guild => (
-                      <Accordion
-                        key={guild.name}
-                        title={
-                          <div className="w-full flex justify-between items-center">
-                            <span className="font-semibold text-lg text-purple-800">{guild.name}</span>
-                            <span className="text-purple-600 font-medium">{guild.totalPoints} points</span>
-                          </div>
-                        }
-                      >
-                        <div className="pt-4 border-t border-gray-200">
-                          <div className="mb-4 grid grid-cols-2 gap-4">
-                            <div className="bg-blue-50 p-3 rounded-lg shadow-sm text-center">
-                              <p className="text-sm text-blue-700">Players</p>
-                              <p className="font-bold text-xl text-blue-900">{guild.playerCount}</p>
-                            </div>
-                            <div className="bg-green-50 p-3 rounded-lg shadow-sm text-center">
-                              <p className="text-sm text-green-700">Kills Points</p>
-                              <p className="font-bold text-xl text-green-900">{guild.totalPointsFromKills}</p>
-                            </div>
-                            <div className="bg-purple-50 p-3 rounded-lg shadow-sm text-center">
-                              <p className="text-sm text-purple-700">Extra Life Points</p>
-                              <p className="font-bold text-xl text-purple-900">{guild.totalExtraLifePoints}</p>
-                            </div>
-                            <div className="bg-yellow-50 p-3 rounded-lg shadow-sm text-center">
-                              <p className="text-sm text-yellow-700">Total Points</p>
-                              <p className="font-bold text-xl text-yellow-900">{guild.totalPoints}</p>
-                            </div>
-                          </div>
-                          <h4 className="font-semibold text-md text-green-600 mb-2">Kills ({guild.totalKills})</h4>
-                          <ExpandableList
-                            items={guild.kills}
-                            renderItem={(kill: any, i: number) => (
-                              <li key={i} className="flex justify-between items-center bg-green-50 p-3 mb-1.5 rounded-lg border border-green-100 transition-all hover:shadow-sm hover:bg-green-100">
-                                <span className="text-green-800 font-medium">{kill.name}</span>
-                                <span className="font-bold text-green-600 bg-green-100 px-2.5 py-1 rounded-full">{kill.count}</span>
-                              </li>
-                            )}
-                          />
-                          <h4 className="font-semibold text-md text-red-600 mb-2 mt-4">Killed By ({guild.totalDeaths})</h4>
-                          <ExpandableList
-                            items={guild.killedBy}
-                            renderItem={(death: any, i: number) => (
-                              <li key={i} className="flex justify-between items-center bg-red-50 p-3 mb-1.5 rounded-lg border border-red-100 transition-all hover:shadow-sm hover:bg-red-100">
-                                <span className="text-red-800 font-medium">{death.name}</span>
-                                <span className="font-bold text-red-600 bg-red-100 px-2.5 py-1 rounded-full">{death.count}</span>
-                              </li>
-                            )}
+                </div>
+
+                <h2 className="font-bold text-xl text-gray-800 mb-4">Player Stats</h2>
+                <div className="space-y-4">
+                  {/* Column Headers */}
+                  <div className="bg-gray-800 text-white p-3 rounded-lg shadow-lg grid grid-cols-12 font-bold text-lg">
+                    <div className="col-span-1">Rank</div>
+                    <div className="col-span-3">Name</div>
+                    <div className="col-span-2">Guild</div>
+                    <div className="col-span-2">Points</div>
+                    <div className="col-span-2">Kills</div>
+                    <div className="col-span-2">Deaths</div>
+                  </div>
+                  
+                  {filteredPlayerResults.map((player, index) => (
+                    <Accordion
+                      key={player.name}
+                      bgColor={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+                      title={
+                        <div className={`text-gray-600 text-md font-semibold w-full grid grid-cols-12 p-2 rounded-lg`}>
+                          <div className="col-span-1">{player.rank}</div>
+                          <div className="col-span-3">{player.name}</div>
+                          <div className="col-span-2">{player.guildName}</div>
+                          <div className="col-span-2">{player.totalPoints}</div>
+                          <div className="col-span-2 pl-3">{player.totalKills}</div>
+                          <div className="col-span-2 pl-7">{player.totalDeaths}</div>
+                        </div>
+                      }
+                    >
+                      <div className="flex gap-4 ">
+                        <div className="w-1/2">
+                          <SummaryCard
+                            title="Kills"
+                            type="kills"
+                            totalKillsOrDeaths={player.totalKills}
+                            killsOrDeathsByPlayer={player.kills}
+                            killsOrDeathsByGuild={player.totalKillsEachGuild}
                           />
                         </div>
-                      </Accordion>
-                    ))}
-                  </div>
+                        <div className="w-1/2">
+                          <SummaryCard
+                            title="Killed By"
+                            type="killedBy"
+                            totalKillsOrDeaths={player.totalDeaths}
+                            killsOrDeathsByPlayer={player.killedBy}
+                            killsOrDeathsByGuild={player.totalDeathsEachGuild}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-4 mt-4 justify-center">
+                        <button className="bg-gray-800 text-white p-2 rounded-lg" onClick={() => setSelectedPlayer(player)}>
+                        Show timeline
+                        </button>
+                      </div>
+                    </Accordion>
+                  ))}
                 </div>
-              )}
-            </section>
+              </div>
+            )}
+
+            {/* Guild Stats Tab Content */}
+            {activeTab === 'guild' && (
+              <div className="bg-white p-6 rounded-b-2xl rounded-tr-2xl shadow-lg space-y-6">
+                <div className="space-y-4">
+                  {/* Column Headers */}
+                  <div className="bg-gray-800 text-white p-3 rounded-lg shadow-lg grid grid-cols-12 font-bold text-lg">
+                    <div className="col-span-1">Rank</div>
+                    <div className="col-span-3">Name</div>
+                    <div className="col-span-2">Players</div>
+                    <div className="col-span-2">Points</div>
+                    <div className="col-span-2">Kills</div>
+                    <div className="col-span-2">Deaths</div>
+                  </div>
+                  
+                  {results.guildResults.map((guild, index) => (
+                    <Accordion
+                      key={guild.name}
+                      bgColor={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+                      title={
+                        <div className={`text-gray-600 text-md font-semibold w-full grid grid-cols-12 p-2 rounded-lg`}>
+                          <div className="col-span-1">{guild.rank}</div>
+                          <div className="col-span-3">{guild.name}</div>
+                          <div className="col-span-2">{guild.playerCount}</div>
+                          <div className="col-span-2">{guild.totalPoints}</div>
+                          <div className="col-span-2 pl-2">{guild.totalKills}</div>
+                          <div className="col-span-2 pl-6">{guild.totalDeaths}</div>
+                        </div>
+                      }
+                    >
+                      <div className="flex gap-4">
+                        <div className="w-1/2">
+                          <div className="rounded-xl shadow-md overflow-hidden h-full">
+                            {/* Header section */}
+                            <div className={`bg-sky-600 text-white p-4 flex justify-center items-center`}>
+                              <span className="text-xl mr-2">📊</span>
+                              <h3 className="font-bold text-lg">Guild Statistics</h3>
+                            </div>
+                            
+                            {/* Body section */}
+                            <div className={`p-6 h-full bg-sky-50`}>
+                              {/* Points Section */}
+                              <div className="mb-6">
+                                <h4 className="text-lg font-semibold text-gray-700 border-b border-sky-200 pb-2 mb-3">Points Breakdown</h4>
+                                <div className="grid grid-cols-3 gap-4">
+                                  <div className="bg-white p-4 rounded-lg shadow-sm text-center">
+                                    <div className="text-sm text-gray-500">Points from Kills</div>
+                                    <div className="text-xl font-bold text-amber-600">{guild.totalPointsFromKills}</div>
+                                  </div>
+                                  <div className="bg-white p-4 rounded-lg shadow-sm text-center">
+                                    <div className="text-sm text-gray-500">Extra Life Points</div>
+                                    <div className="text-xl font-bold text-green-600">{guild.totalExtraLifePoints}</div>
+                                  </div>
+                                  <div className="bg-white p-4 rounded-lg shadow-sm text-center border-2 border-amber-400">
+                                    <div className="text-sm text-gray-700">Total Points</div>
+                                    <div className="text-xl font-bold text-amber-800">{guild.totalPoints}</div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Performance Section */}
+                              <div>
+                                <h4 className="text-lg font-semibold text-gray-700 border-b border-sky-200 pb-2 mb-3">Combat Performance</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <div className="text-sm text-gray-700">Kills</div>
+                                        <div className="text-xl font-bold text-teal-600">{guild.totalKills}</div>
+                                      </div>
+                                      <span className="text-2xl">💥</span>
+                                    </div>
+                                  </div>
+                                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <div className="text-sm text-gray-700">Deaths</div>
+                                        <div className="text-xl font-bold text-red-600">{guild.totalDeaths}</div>
+                                      </div>
+                                      <span className="text-2xl">☠️</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="mt-4 bg-white p-4 rounded-lg shadow-sm">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="text-sm text-gray-700">K/D Ratio</div>
+                                      <div className="text-xl font-bold text-indigo-600">
+                                        {guild.totalDeaths > 0 ? (guild.totalKills / guild.totalDeaths).toFixed(2) : guild.totalKills > 0 ? "∞" : "0"}
+                                      </div>
+                                    </div>
+                                    <div className="text-xs bg-gray-100 rounded-full px-2 py-1">
+                                      {guild.totalKills} / {guild.totalDeaths}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Player Count */}
+                              <div className="mt-4 bg-gradient-to-r from-sky-100 to-sky-100 p-3 rounded-lg text-center">
+                                <div className="text-sm text-gray-600">Total Players</div>
+                                <div className="text-xl font-bold text-gray-800">{guild.playerCount}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="w-1/2">
+                          <SummaryCard
+                            title="Kills"
+                            type="kills"
+                            totalKillsOrDeaths={guild.totalKills}
+                            killsOrDeathsByPlayer={guild.kills.sort((a, b) => b.count - a.count)}
+                            killsOrDeathsByGuild={guild.kills.map(kill => ({ guildName: kill.name, count: kill.count }))}
+                          />
+                        </div>
+                        <div className="w-1/2">
+                          <SummaryCard
+                            title="Killed By"
+                            type="killedBy"
+                            totalKillsOrDeaths={guild.totalDeaths}
+                            killsOrDeathsByPlayer={guild.killedBy.sort((a, b) => b.count - a.count)}
+                            killsOrDeathsByGuild={guild.killedBy.map(kill => ({ guildName: kill.name, count: kill.count }))}
+                          />
+                        </div>
+                      </div>
+                    </Accordion>
+                  ))}
+                </div>
+              </div>
+            )}
           </main>
         </div>
         {selectedPlayer && (

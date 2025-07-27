@@ -13,6 +13,7 @@ export interface Life {
 
 export interface PlayerStat {
   name: string
+  rank: number
   guildName: string
   totalPoints: number
   totalKills: number
@@ -31,6 +32,7 @@ interface KillStat {
 
 interface GuildStat {
   name: string
+  rank: number
   playerCount: number
   totalPointsFromKills: number
   totalExtraLifePoints: number
@@ -54,7 +56,8 @@ function parseAndProcessLog(log: string): Result {
   const getPlayer = (name: string) => {
     if (!playerStats[name]) {
       playerStats[name] = {
-        name, 
+        name,
+        rank: 0,
         guildName: '',
         totalPoints: 0,
         totalKills: 0,
@@ -73,6 +76,7 @@ function parseAndProcessLog(log: string): Result {
     if (!guildStats[name]) {
       guildStats[name] = {
         name,
+        rank: 0,
         playerCount: 0,
         totalPointsFromKills: 0,
         totalExtraLifePoints: 0,
@@ -197,7 +201,8 @@ function parseAndProcessLog(log: string): Result {
         acc.push({ name: e.data.playerName, count: 1 });
       }
       return acc;
-    }, []);
+    }, [])
+    .sort((a, b) => b.count - a.count);
 
     const killedBy: KillStat[] = p.events.filter(e => e.type === 'death').reduce((acc: KillStat[], e) => {
       const existing = acc.find(k => k.name === e.data.playerName);
@@ -207,7 +212,8 @@ function parseAndProcessLog(log: string): Result {
         acc.push({ name: e.data.playerName, count: 1 });
       }
       return acc;
-    }, []);
+    }, [])
+    .sort((a, b) => b.count - a.count);
 
     // Calculate totalKillsEachGuild - count kills per guild
     const totalKillsEachGuild = p.events
@@ -240,7 +246,9 @@ function parseAndProcessLog(log: string): Result {
       .sort((a, b) => b.count - a.count);
 
     return { ...p, lives, kills, killedBy, totalKillsEachGuild, totalDeathsEachGuild };
-  }).sort((a, b) => b.totalPoints - a.totalPoints);
+  })
+  .sort((a, b) => b.totalPoints - a.totalPoints)
+  .map((player, index) => ({ ...player, rank: index + 1 }));
 
   const guildResults = Object.values(guildStats).map(guild => {
     const maxLifePoints = guildPlayers[guild.name].size * 10
@@ -251,7 +259,9 @@ function parseAndProcessLog(log: string): Result {
       totalExtraLifePoints,
       totalPoints: guild.totalPointsFromKills + totalExtraLifePoints,
     }
-  }).sort((a, b) => b.totalPoints - a.totalPoints)
+  })
+  .sort((a, b) => b.totalPoints - a.totalPoints)
+  .map((guild, index) => ({ ...guild, rank: index + 1 }))
 
   return { playerResults, guildResults }
 }
