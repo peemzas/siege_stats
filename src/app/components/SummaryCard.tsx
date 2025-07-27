@@ -1,0 +1,132 @@
+import { useEffect, useRef } from 'react';
+import Chart from 'chart.js/auto';
+import { ArcElement, Tooltip, Legend } from 'chart.js';
+
+// Register required Chart.js components
+Chart.register(ArcElement, Tooltip, Legend);
+
+interface KillSummaryCardProps {
+  title: string;
+  type: string;
+  totalKillsOrDeaths: number;
+  killsOrDeathsByPlayer: { name: string; count: number }[];
+  killsOrDeathsByGuild?: { guildName: string; count: number }[]; // Optional, for pie chart
+}
+
+export default function SummaryCard({ title, type, totalKillsOrDeaths, killsOrDeathsByPlayer, killsOrDeathsByGuild }: KillSummaryCardProps) {
+  const chartRef = useRef<HTMLCanvasElement>(null);
+  const chartInstance = useRef<Chart | null>(null);
+
+  // Create or update chart when killsByGuild changes
+  useEffect(() => {
+    if (killsOrDeathsByGuild && killsOrDeathsByGuild.length > 0 && chartRef.current) {
+      // Destroy existing chart if it exists
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+
+      // Generate colors based on guild count (use consistent colors)
+      const generateColors = (count: number) => {
+        const baseColors = [
+          'rgba(255, 99, 132, 0.8)',   // red
+          'rgba(54, 162, 235, 0.8)',   // blue
+          'rgba(255, 206, 86, 0.8)',   // yellow
+          'rgba(75, 192, 192, 0.8)',   // teal
+          'rgba(153, 102, 255, 0.8)',  // purple
+          'rgba(255, 159, 64, 0.8)',   // orange
+          'rgba(46, 204, 113, 0.8)',   // green
+        ];
+        
+        return Array.from({ length: count }, (_, i) => baseColors[i % baseColors.length]);
+      };
+
+      const ctx = chartRef.current.getContext('2d');
+      if (ctx) {
+        // Create new chart
+        chartInstance.current = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: killsOrDeathsByGuild.map(guild => guild.guildName),
+            datasets: [{
+              data: killsOrDeathsByGuild.map(guild => guild.count),
+              backgroundColor: generateColors(killsOrDeathsByGuild.length),
+              borderColor: 'rgba(255, 255, 255, 0.8)',
+              borderWidth: 1,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const label = context.label || '';
+                    const value = context.parsed || 0;
+                    const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+                    const percentage = Math.round((value * 100) / total);
+                    return `${label}: ${value} (${percentage}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+    
+    // Clean up chart on component unmount
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+    };
+  }, [killsOrDeathsByGuild]);
+
+  return (
+    <div className="rounded-xl shadow-md overflow-hidden h-full">
+      {/* Header section */}
+      <div className={`${type === 'kills' ? 'bg-teal-800' : 'bg-red-800'} text-white p-4 flex justify-center items-center`}>
+        <span className="text-xl mr-2">{type === 'kills' ? '💥' : '☠️'}</span>
+        <h3 className="font-bold text-lg">{title} ({totalKillsOrDeaths})</h3>
+      </div>
+      
+      {/* Body section */}
+      <div className={`p-4 ${type === 'kills' ? 'bg-teal-100' : 'bg-red-100'} h-full`}>
+        {/* Pie chart section */}
+        {killsOrDeathsByGuild && killsOrDeathsByGuild.length > 0 && (
+          <div className="mb-4">
+            <div className="h-60 w-full">
+              <canvas ref={chartRef} />
+            </div>
+          </div>
+        )}
+        
+        {/* Player kills list */}
+        {killsOrDeathsByPlayer && killsOrDeathsByPlayer.length > 0 && (
+          <div>
+            <div className={`${type === 'kills' ? 'bg-emerald-50' : 'bg-red-50'} rounded-lg overflow-hidden border ${type === 'kills' ? 'border-emerald-200' : 'border-red-200'} shadow-sm`}>
+              <div className="max-h-64 overflow-y-auto">
+                {killsOrDeathsByPlayer.map(player => (
+                  <div 
+                  key={player.name} 
+                  className={`
+                    flex justify-between p-3 
+                    ${type === 'kills' ? 'bg-emerald-50' : 'bg-red-50'} 
+                    border-b 
+                    ${type === 'kills' ? 'border-emerald-200' : 'border-red-200'} 
+                    last:border-b-0
+                  `}
+                  >
+                    <span className="font-medium">{player.name}</span>
+                    <span className={`font-bold ${type === 'kills' ? 'text-emerald-700' : 'text-red-700'}`}>{player.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
