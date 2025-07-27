@@ -12,10 +12,12 @@ export default function Home() {
   const [selectedGuild, setSelectedGuild] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerStat | null>(null);
   const [activeTab, setActiveTab] = useState('player'); // 'player' or 'guild'
+  const [isLoading, setIsLoading] = useState(false); // New loading state
   const [playerFilterName, setPlayerFilterName] = useState(''); // New state for player name filter
 
   // --- Existing Logic ---
   const processLogData = async (file: File) => {
+    setIsLoading(true);
     const formData = new FormData();
     formData.append('file', file);
     try {
@@ -29,6 +31,8 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error during log processing:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -131,9 +135,10 @@ export default function Home() {
             ></textarea>
             <button
               onClick={handleTextareaSubmit}
-              className="mt-6 px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-lg shadow-md hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              className="mt-6 px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-lg shadow-md hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
             >
-              Parse Log from Text
+              {isLoading ? 'Processing...' : 'Parse Log from Text'}
             </button>
           </div>
         </main>
@@ -144,12 +149,23 @@ export default function Home() {
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-rose-100 to-teal-100 text-gray-800 font-mono">
+        {isLoading && (
+          <div className="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+            <div className="text-black text-2xl font-semibold flex items-center">
+              <svg className="animate-spin -ml-1 mr-3 h-8 w-8 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Processing Log...
+            </div>
+          </div>
+        )}
         <nav className="sticky top-0 z-50 h-20 bg-gradient-to-r from-blue-200 to-purple-200 flex items-center justify-between px-8 py-4 shadow-md">
           <div className="left-section">
             <h1 className="font-bold text-2xl text-gray-800 tracking-wide">Siege Stats</h1>
           </div>
           <div className="right-section">
-            <button onClick={triggerFileUpload} className="bg-gradient-to-r from-pink-500 to-red-400 text-white font-semibold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out flex items-center gap-2">
+            <button onClick={triggerFileUpload} className="bg-gradient-to-r from-pink-500 to-red-400 text-white font-semibold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled={isLoading}>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
               </svg>
