@@ -245,7 +245,7 @@ export default function Home() {
                           title={
                             <div className="w-full flex justify-between items-center">
                               <span className="font-semibold text-lg text-purple-800">{player.name} ({player.guildName})</span>
-                              <span className="text-purple-600 font-medium">{player.totalKills} Kills / {player.totalDeaths} Deaths ({kdRatio} K/D)</span>
+                              <span className="text-purple-600 font-medium">{player.totalPoints} Points | {player.totalKills} Kills / {player.totalDeaths} Deaths ({kdRatio} K/D)</span>
                             </div>
                           }
                         >
