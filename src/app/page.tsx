@@ -136,57 +136,57 @@ export default function Home() {
         )}
         <main className="container mx-auto p-4 sm:p-6 lg:p-8">
           <header className="text-center mb-12">
-            <h1 className="text-5xl sm:text-6xl font-extrabold text-red-400 text-shadow-lg text-shadow-color-black">
-              Siege Stats
-            </h1>
+            <img src="/images/logo.png" alt="Logo" className="w-64 mb-4 inline-block" />
             <p className="text-lg text-gray-500 mt-3">
               Upload your game log to see the stats
             </p>
           </header>
-          <div className="flex justify-center mb-6">
-            <label
-              htmlFor="file-upload"
-              className="cursor-pointer bg-white rounded-xl shadow-lg p-8 w-full max-w-lg text-center transition-transform transform hover:scale-105 duration-300"
-            >
-              <div 
-                className={`border-4 border-dashed ${isDragging ? 'border-amber-500 bg-amber-50' : 'border-gray-200'} rounded-lg p-10 transition-colors duration-300`}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragEnter={handleDragEnter}
-                onDragLeave={handleDragLeave}
+          <div className="relative flex flex-row gap-6 my-8 max-w-6xl mx-auto">
+            <div className="flex-1">
+              <label
+                htmlFor="file-upload"
+                className="cursor-pointer bg-white rounded-xl shadow-lg w-full p-5 text-center transition-transform transform hover:scale-105 duration-300 block"
               >
-                <p className="text-gray-500 text-lg">
-                  Drag & drop your file here or click to browse
-                </p>
-                <input
-                  id="file-upload"
-                  type="file"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
-              </div>
-            </label>
-          </div>
-          <div className="relative flex items-center my-8 max-w-lg mx-auto">
-            <div className="flex-grow border-t border-gray-300"></div>
-            <span className="flex-shrink mx-4 text-gray-500 font-semibold">OR</span>
-            <div className="flex-grow border-t border-gray-300"></div>
-          </div>
-          <div className="flex flex-col items-center w-full max-w-lg mx-auto mb-12">
-            <textarea
-              className="w-full p-4 border-2 border-gray-200 rounded-xl shadow-inner resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 transition duration-300"
-              rows={10}
-              placeholder="Paste your log data here..."
-              value={logContent}
-              onChange={(e) => setLogContent(e.target.value)}
-            ></textarea>
-            <button
-              onClick={handleTextareaSubmit}
-              className="mt-6 px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-lg shadow-md hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            >
-              Parse Log from Text
-            </button>
+                <div 
+                  className={`border-4 border-dashed ${isDragging ? 'border-amber-500 bg-amber-50' : 'border-gray-300'} rounded-lg p-10 m-5 transition-colors duration-300`}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                >
+                  <p className="text-gray-500 text-lg">
+                    Drag & drop your file here or click to browse
+                  </p>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                </div>
+              </label>
+            </div>
+            <div className="flex flex-col items-center justify-center px-2 h-80">
+              <div className="w-1 bg-gray-200 h-40 rounded-t-full"></div>
+              <span className="text-gray-500 font-medium my-2">OR</span>
+              <div className="w-1 bg-gray-200 h-40 rounded-b-full"></div>
+            </div>
+            <div className="flex-1">
+              <textarea
+                className="w-full p-4 border-2 border-gray-200 rounded-xl shadow-inner resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 transition duration-300"
+                rows={10}
+                placeholder="Paste your log data here..."
+                value={logContent}
+                onChange={(e) => setLogContent(e.target.value)}
+              ></textarea>
+              <button
+                onClick={handleTextareaSubmit}
+                className="mt-6 px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-lg shadow-md hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isLoading}
+              >
+                Parse Log from Text
+              </button>
+            </div>
           </div>
         </main>
       </div>
@@ -209,7 +209,7 @@ export default function Home() {
         )}
         <nav className="top-0 z-50 h-20 bg-gradient-to-r from-blue-200 to-purple-200 flex items-center justify-between px-8 py-4 shadow-md">
           <div className="left-section">
-            <h1 className="font-bold text-2xl text-gray-800 tracking-wide">Siege Stats</h1>
+            <img src="/images/logo.png" alt="Logo" className="w-24 mb-4" />
           </div>
           <div className="right-section">
             <button onClick={triggerFileUpload} className="bg-gradient-to-r from-pink-500 to-red-400 text-white font-semibold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled={isLoading}>
@@ -354,7 +354,10 @@ export default function Home() {
                             title="Kills"
                             type="kills"
                             totalKillsOrDeaths={player.totalKills}
-                            killsOrDeathsByPlayer={player.kills}
+                            killsOrDeathsByPlayer={player.kills.map(kill => ({
+                              ...kill,
+                              guildName: results.playerResults.find(p => p.name === kill.name)?.guildName || ''
+                            }))}
                             killsOrDeathsByGuild={player.totalKillsEachGuild}
                           />
                         </div>
@@ -363,7 +366,10 @@ export default function Home() {
                             title="Killed By"
                             type="killedBy"
                             totalKillsOrDeaths={player.totalDeaths}
-                            killsOrDeathsByPlayer={player.killedBy}
+                            killsOrDeathsByPlayer={player.killedBy.map(death => ({
+                              ...death,
+                              guildName: results.playerResults.find(p => p.name === death.name)?.guildName || ''
+                            }))}
                             killsOrDeathsByGuild={player.totalDeathsEachGuild}
                           />
                         </div>

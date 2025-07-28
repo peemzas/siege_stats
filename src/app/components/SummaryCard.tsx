@@ -9,7 +9,7 @@ interface KillSummaryCardProps {
   title: string;
   type: string;
   totalKillsOrDeaths: number;
-  killsOrDeathsByPlayer: { name: string; count: number }[];
+  killsOrDeathsByPlayer: { name: string; guildName?: string; count: number }[];
   killsOrDeathsByGuild?: { guildName: string; count: number }[]; // Optional, for pie chart
 }
 
@@ -118,7 +118,14 @@ export default function SummaryCard({ title, type, totalKillsOrDeaths, killsOrDe
                     last:border-b-0
                   `}
                   >
-                    <span className="font-medium">{player.name}</span>
+                    <span className="font-medium relative group">
+                      {player.name}
+                      {player.guildName && (
+                        <span className="absolute invisible group-hover:visible bg-gray-700 text-white text-xs rounded py-1 px-2 -mt-10 -left-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 max-w-60 break-words whitespace-normal">
+                          Guild: {player.guildName}
+                        </span>
+                      )}
+                    </span>
                     <span className={`font-bold ${type === 'kills' ? 'text-emerald-700' : 'text-red-700'}`}>{player.count}</span>
                   </div>
                 ))}
