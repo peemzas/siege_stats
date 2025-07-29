@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "LogEntry" ALTER COLUMN "logDate" SET DATA TYPE TEXT;
