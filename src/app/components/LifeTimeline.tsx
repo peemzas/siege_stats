@@ -1,4 +1,4 @@
-import { Life } from '../api/upload/route';
+import { Life } from '../api/types/log.type';
 import Timeline, { TimelineItem } from './Timeline';
 
 interface LifeTimelineProps {
