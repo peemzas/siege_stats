@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, memo } from 'react';
 import Chart from 'chart.js/auto';
 import { ArcElement, Tooltip, Legend } from 'chart.js';
 
@@ -13,13 +13,43 @@ interface KillSummaryCardProps {
   killsOrDeathsByGuild?: { guildName: string; count: number }[]; // Optional, for pie chart
 }
 
-export default function SummaryCard({ title, type, totalKillsOrDeaths, killsOrDeathsByPlayer, killsOrDeathsByGuild }: KillSummaryCardProps) {
+// Memoize the component to prevent unnecessary re-renders
+const SummaryCard = memo(function SummaryCard({ 
+  title, 
+  type, 
+  totalKillsOrDeaths, 
+  killsOrDeathsByPlayer, 
+  killsOrDeathsByGuild 
+}: KillSummaryCardProps) {
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<Chart | null>(null);
-
-  // Create or update chart when killsByGuild changes
+  const [isChartVisible, setIsChartVisible] = useState(false);
+  
+  // Only initialize chart when it's visible in viewport
   useEffect(() => {
-    if (killsOrDeathsByGuild && killsOrDeathsByGuild.length > 0 && chartRef.current) {
+    // Use IntersectionObserver to detect when chart is visible
+    if (typeof window !== 'undefined' && 'IntersectionObserver' in window && chartRef.current) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            setIsChartVisible(true);
+            observer.disconnect();
+          }
+        },
+        { threshold: 0.1 }
+      );
+      
+      observer.observe(chartRef.current);
+      return () => observer.disconnect();
+    } else {
+      // Fallback for browsers without IntersectionObserver
+      setIsChartVisible(true);
+    }
+  }, []);
+
+  // Create or update chart when killsByGuild changes and chart is visible
+  useEffect(() => {
+    if (isChartVisible && killsOrDeathsByGuild && killsOrDeathsByGuild.length > 0 && chartRef.current) {
       // Destroy existing chart if it exists
       if (chartInstance.current) {
         chartInstance.current.destroy();
@@ -42,36 +72,39 @@ export default function SummaryCard({ title, type, totalKillsOrDeaths, killsOrDe
 
       const ctx = chartRef.current.getContext('2d');
       if (ctx) {
-        // Create new chart
-        chartInstance.current = new Chart(ctx, {
-          type: 'pie',
-          data: {
-            labels: killsOrDeathsByGuild.map(guild => guild.guildName),
-            datasets: [{
-              data: killsOrDeathsByGuild.map(guild => guild.count),
-              backgroundColor: generateColors(killsOrDeathsByGuild.length),
-              borderColor: 'rgba(255, 255, 255, 0.8)',
-              borderWidth: 1,
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              tooltip: {
-                callbacks: {
-                  label: function(context) {
-                    const label = context.label || '';
-                    const value = context.parsed || 0;
-                    const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
-                    const percentage = Math.round((value * 100) / total);
-                    return `${label}: ${value} (${percentage}%)`;
+        // Small timeout to prevent UI blocking during rendering
+        setTimeout(() => {
+          // Create new chart
+          chartInstance.current = new Chart(ctx, {
+            type: 'pie',
+            data: {
+              labels: killsOrDeathsByGuild.map(guild => guild.guildName),
+              datasets: [{
+                data: killsOrDeathsByGuild.map(guild => guild.count),
+                backgroundColor: generateColors(killsOrDeathsByGuild.length),
+                borderColor: 'rgba(255, 255, 255, 0.8)',
+                borderWidth: 1,
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                tooltip: {
+                  callbacks: {
+                    label: function(context) {
+                      const label = context.label || '';
+                      const value = context.parsed || 0;
+                      const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+                      const percentage = Math.round((value * 100) / total);
+                      return `${label}: ${value} (${percentage}%)`;
+                    }
                   }
                 }
               }
             }
-          }
-        });
+          });
+        }, 0);
       }
     }
     
@@ -81,7 +114,37 @@ export default function SummaryCard({ title, type, totalKillsOrDeaths, killsOrDe
         chartInstance.current.destroy();
       }
     };
-  }, [killsOrDeathsByGuild]);
+  }, [killsOrDeathsByGuild, isChartVisible]);
+
+  // Memoized player list renderer
+  const renderPlayerList = () => {
+    if (!killsOrDeathsByPlayer || killsOrDeathsByPlayer.length === 0) {
+      return <div className="p-3 text-gray-500 text-center">No data available</div>;
+    }
+    
+    return killsOrDeathsByPlayer.map(player => (
+      <div 
+        key={player.name} 
+        className={`
+          flex justify-between p-3 
+          ${type === 'kills' ? 'bg-emerald-50' : 'bg-red-50'} 
+          border-b 
+          ${type === 'kills' ? 'border-emerald-200' : 'border-red-200'} 
+          last:border-b-0
+        `}
+      >
+        <span className="font-medium relative group">
+          {player.name}
+          {player.guildName && (
+            <span className="absolute invisible group-hover:visible bg-gray-700 text-white text-xs rounded py-1 px-2 -mt-10 -left-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 max-w-60 break-words whitespace-normal">
+              Guild: {player.guildName}
+            </span>
+          )}
+        </span>
+        <span className={`font-bold ${type === 'kills' ? 'text-emerald-700' : 'text-red-700'}`}>{player.count}</span>
+      </div>
+    ));
+  };
 
   return (
     <div className="rounded-xl shadow-md overflow-hidden h-full">
@@ -98,6 +161,11 @@ export default function SummaryCard({ title, type, totalKillsOrDeaths, killsOrDe
           <div className="mb-4">
             <div className="h-60 w-full">
               <canvas ref={chartRef} />
+              {!isChartVisible && (
+                <div className="flex justify-center items-center h-full">
+                  <div className="animate-pulse text-gray-500">Loading chart...</div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -107,28 +175,7 @@ export default function SummaryCard({ title, type, totalKillsOrDeaths, killsOrDe
           <div>
             <div className={`${type === 'kills' ? 'bg-emerald-50' : 'bg-red-50'} rounded-lg overflow-hidden border ${type === 'kills' ? 'border-emerald-200' : 'border-red-200'} shadow-sm`}>
               <div className="max-h-64 overflow-y-auto">
-                {killsOrDeathsByPlayer.map(player => (
-                  <div 
-                  key={player.name} 
-                  className={`
-                    flex justify-between p-3 
-                    ${type === 'kills' ? 'bg-emerald-50' : 'bg-red-50'} 
-                    border-b 
-                    ${type === 'kills' ? 'border-emerald-200' : 'border-red-200'} 
-                    last:border-b-0
-                  `}
-                  >
-                    <span className="font-medium relative group">
-                      {player.name}
-                      {player.guildName && (
-                        <span className="absolute invisible group-hover:visible bg-gray-700 text-white text-xs rounded py-1 px-2 -mt-10 -left-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 max-w-60 break-words whitespace-normal">
-                          Guild: {player.guildName}
-                        </span>
-                      )}
-                    </span>
-                    <span className={`font-bold ${type === 'kills' ? 'text-emerald-700' : 'text-red-700'}`}>{player.count}</span>
-                  </div>
-                ))}
+                {renderPlayerList()}
               </div>
             </div>
           </div>
@@ -136,4 +183,6 @@ export default function SummaryCard({ title, type, totalKillsOrDeaths, killsOrDe
       </div>
     </div>
   );
-}
+});
+
+export default SummaryCard;
