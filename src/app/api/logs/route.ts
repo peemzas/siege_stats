@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { parseAndProcessLog } from '../utils/parseLog';
+import { getCharactersByServer } from '@/lib/character';
 
 // POST /api/logs - Save a new log with date
 export async function POST(req: NextRequest) {
@@ -23,6 +24,23 @@ export async function POST(req: NextRequest) {
     // Read and parse the log file
     const rawLog = await file.text();
     const parsedData = parseAndProcessLog(rawLog);
+
+    // Get character class information for this server
+    const characters = await getCharactersByServer(serverName);
+    const characterClasses: Record<string, string> = {};
+    
+    // Create a map of character names to classes
+    characters.forEach((char: any) => {
+      characterClasses[char.name] = char.class;
+    });
+
+    // Enhance the parsed data with character class information
+    if (parsedData && parsedData.playerResults) {
+      parsedData.playerResults = parsedData.playerResults.map((player: any) => ({
+        ...player,
+        class: characterClasses[player.name] || '',
+      }));
+    }
 
     // Save to database
     const logEntry = await prisma.logEntry.create({

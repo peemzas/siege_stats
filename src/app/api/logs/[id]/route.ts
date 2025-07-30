@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCharactersByServer } from '@/lib/character';
 
 // GET /api/logs/[id] - Get a specific log by date or ID
 export async function GET(
