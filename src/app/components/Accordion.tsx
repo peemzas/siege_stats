@@ -92,7 +92,7 @@ const Accordion = memo(function Accordion({
     <div className={`rounded-xl shadow-md mb-4 ${bgColor}`}>
       {/* Accordion header */}
       <div 
-        className="relative cursor-pointer p-4"
+        className="relative cursor-pointer p-4 max-h-16 flex items-center"
         onClick={toggleAccordion}
         aria-expanded={isOpen}
         role="button"

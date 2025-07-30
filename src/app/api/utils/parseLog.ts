@@ -8,7 +8,8 @@ import {
 } from '../types/log.type';
 
 export function parseAndProcessLog(log: string): Result {
-  const playerStats: { [key: string]: Omit<PlayerStat, 'lives'> & { events: ({ type: 'kill'; data: KillEvent } | { type: 'death'; data: KillEvent })[] } } = {}
+  const playerStats: { [key: string]: Omit<PlayerStat, 'lives'> } = {}
+  const events: { [key: string]: ({ type: 'kill'; data: KillEvent } | { type: 'death'; data: KillEvent })[] } = {}
   const guildStats: { [key: string]: GuildStat } = {}
   const guildPlayers: { [key: string]: Set<string> } = {}
 
@@ -18,12 +19,12 @@ export function parseAndProcessLog(log: string): Result {
         name,
         rank: 0,
         guildName: '',
+        class: '',  
         totalPoints: 0,
         totalKills: 0,
         totalDeaths: 0,
         totalKillsEachGuild: [],
         totalDeathsEachGuild: [],
-        events: [],
         kills: [],
         killedBy: [],
       }
@@ -111,17 +112,22 @@ export function parseAndProcessLog(log: string): Result {
       attackerPlayer.guildName = attackerGuildName
       attackerPlayer.totalPoints += totalPointsEachKill
       attackerPlayer.totalKills += 1
-      attackerPlayer.events.push({ type: 'kill', data: { playerName: defenderName, guildName: defenderGuildName, timestamp } })
+      if (!events[attackerName]) {
+        events[attackerName] = []
+      }
+      events[attackerName].push({ type: 'kill', data: { playerName: defenderName, guildName: defenderGuildName, timestamp } })
 
       attackerGuild.totalPointsFromKills += totalPointsEachKill
       attackerGuild.totalKills += 1
       addOrIncrementStat(attackerGuild.kills, defenderGuildName)
 
-
       const defenderPlayer = getPlayer(defenderName)
       defenderPlayer.totalDeaths += 1
       defenderPlayer.guildName = defenderGuildName
-      defenderPlayer.events.push({ type: 'death', data: { playerName: attackerName, guildName: attackerGuildName, timestamp } })
+      if (!events[defenderName]) {
+        events[defenderName] = []
+      }
+      events[defenderName].push({ type: 'death', data: { playerName: attackerName, guildName: attackerGuildName, timestamp } })
 
       defenderGuild.totalDeaths += 1
       addOrIncrementStat(defenderGuild.killedBy, attackerGuildName)
@@ -134,12 +140,9 @@ export function parseAndProcessLog(log: string): Result {
   })
 
   const playerResults: PlayerStat[] = Object.values(playerStats).map(p => {
-    p.events.sort((a, b) => new Date(a.data.timestamp).getTime() - new Date(b.data.timestamp).getTime());
-
     const lives: Life[] = [];
     let currentLife: Life = { kills: [] };
-
-    for (const event of p.events) {
+    for (const event of events[p.name]) {
       if (event.type === 'kill') {
         currentLife.kills.push(event.data);
       } else if (event.type === 'death') {
@@ -152,7 +155,7 @@ export function parseAndProcessLog(log: string): Result {
       lives.push(currentLife);
     }
 
-    const kills: KillStat[] = p.events.filter(e => e.type === 'kill').reduce((acc: KillStat[], e) => {
+    const kills: KillStat[] = events[p.name].filter(e => e.type === 'kill').reduce((acc: KillStat[], e) => {
       const existing = acc.find(k => k.name === e.data.playerName);
       if (existing) {
         existing.count++;
@@ -163,7 +166,7 @@ export function parseAndProcessLog(log: string): Result {
     }, [])
       .sort((a, b) => b.count - a.count);
 
-    const killedBy: KillStat[] = p.events.filter(e => e.type === 'death').reduce((acc: KillStat[], e) => {
+    const killedBy: KillStat[] = events[p.name].filter(e => e.type === 'death').reduce((acc: KillStat[], e) => {
       const existing = acc.find(k => k.name === e.data.playerName);
       if (existing) {
         existing.count++;
@@ -175,7 +178,7 @@ export function parseAndProcessLog(log: string): Result {
       .sort((a, b) => b.count - a.count);
 
     // Calculate totalKillsEachGuild - count kills per guild
-    const totalKillsEachGuild = p.events
+    const totalKillsEachGuild = events[p.name]
       .filter(e => e.type === 'kill')
       .reduce((acc: { guildName: string; count: number }[], e) => {
         const guildName = e.data.guildName;
@@ -190,7 +193,7 @@ export function parseAndProcessLog(log: string): Result {
       .sort((a, b) => b.count - a.count);
 
     // Calculate totalDeathsEachGuild - count deaths per guild
-    const totalDeathsEachGuild = p.events
+    const totalDeathsEachGuild = events[p.name]
       .filter(e => e.type === 'death')
       .reduce((acc: { guildName: string; count: number }[], e) => {
         const guildName = e.data.guildName;

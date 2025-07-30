@@ -133,11 +133,11 @@ const SummaryCard = memo(function SummaryCard({
           last:border-b-0
         `}
       >
-        <span className="font-medium relative group">
+        <span className="font-medium relative inline-block group">
           {player.name}
           {player.guildName && (
-            <span className="absolute invisible group-hover:visible bg-gray-700 text-white text-xs rounded py-1 px-2 -mt-10 -left-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 max-w-60 break-words whitespace-normal">
-              Guild: {player.guildName}
+            <span className="absolute invisible group-hover:visible bg-gray-700 text-white text-xs rounded py-1 px-2 -mt-10 -left-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-1 text-center">
+              Guild [{player.guildName}]
             </span>
           )}
         </span>

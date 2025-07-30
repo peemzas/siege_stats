@@ -1,5 +1,6 @@
 "use client";
 
+import Image from 'next/image';
 import { useState, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -288,7 +289,7 @@ function LogDetailPage() {
               {/* Column Headers */}
               <div className="bg-gray-800 text-white p-3 rounded-lg shadow-lg grid grid-cols-12 font-bold text-lg">
                 <div className="col-span-1">Rank</div>
-                <div className="col-span-3">Name</div>
+                <div className="col-span-3 pl-12">Name</div>
                 <div className="col-span-2">Guild</div>
                 <div className="col-span-2">Points</div>
                 <div className="col-span-2">Kills</div>
@@ -305,12 +306,28 @@ function LogDetailPage() {
                     bgColor={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
                     title={
                       <div className={`text-gray-600 text-md font-semibold w-full grid grid-cols-12 p-2 rounded-lg`}>
-                        <div className="col-span-1">{player.rank}</div>
-                        <div className="col-span-3">{player.name}</div>
-                        <div className="col-span-2">{player.guildName}</div>
-                        <div className="col-span-2">{player.totalPoints}</div>
-                        <div className="col-span-2 pl-3">{player.totalKills}</div>
-                        <div className="col-span-2 pl-7">{player.totalDeaths}</div>
+                        <div className="col-span-1 flex items-center py-1">{player.rank}</div>
+                        <div className="col-span-3 flex items-center gap-2 py-1">
+                          {player.class ? (
+                            <div className="relative inline-block group">
+                              <span className="absolute invisible group-hover:visible z-10 text-xs bg-gray-500 text-white px-2 py-1 rounded whitespace-nowrap transform -translate-x-1/4 bottom-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                {player.class}
+                              </span>
+                              <Image
+                                src={`/images/classes/${player.class}.png`}
+                                alt={player.name}
+                                width={30}
+                                height={30}
+                              />
+                            </div>) : (
+                            <span className="pl-8"></span>
+                          )}
+                          {player.name}
+                        </div>
+                        <div className="col-span-2 flex items-center py-1">{player.guildName}</div>
+                        <div className="col-span-2 flex items-center py-1">{player.totalPoints}</div>
+                        <div className="col-span-2 flex items-center pl-3 py-1">{player.totalKills}</div>
+                        <div className="col-span-2 flex items-center pl-7 py-1">{player.totalDeaths}</div>
                       </div>
                     }
                   >
@@ -353,7 +370,7 @@ function LogDetailPage() {
               {/* Column Headers */}
               <div className="bg-gray-800 text-white p-3 rounded-lg shadow-lg grid grid-cols-12 font-bold text-lg">
                 <div className="col-span-1">Rank</div>
-                <div className="col-span-3">Name</div>
+                <div className="col-span-3 pl-2">Name</div>
                 <div className="col-span-2">Players</div>
                 <div className="col-span-2">Points</div>
                 <div className="col-span-2">Kills</div>

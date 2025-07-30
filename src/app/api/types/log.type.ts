@@ -13,6 +13,7 @@ export interface PlayerStat {
   name: string
   rank: number
   guildName: string
+  class?: string
   totalPoints: number
   totalKills: number
   totalDeaths: number

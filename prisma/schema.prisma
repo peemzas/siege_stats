@@ -18,3 +18,15 @@ model LogEntry {
   parsedData Json
   serverName String
 }
+
+model Character {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+  serverName String
+  guildName  String?
+  name       String
+  class      String
+
+  @@unique([name])
+}
