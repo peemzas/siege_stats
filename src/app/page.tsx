@@ -26,6 +26,7 @@ const GAME_SERVERS = [
   { id: 'Mia', name: 'Mia' },
   { id: 'Glaphan', name: 'Glaphan' },
   { id: 'Rhisis', name: 'Rhisis' },
+  { id: 'FWC 2025', name: 'FWC 2025' },
 ];
 
 // Create a client
