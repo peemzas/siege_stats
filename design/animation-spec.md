@@ -39,7 +39,7 @@ Every duration below is the running animation. `prefers-reduced-motion: reduce` 
 
 | Moment | Duration | Easing | Reduced motion |
 |---|---|---|---|
-| Page / panel enter | 300ms, 6px rise | ease | visible immediately |
+| Page / panel enter | 300ms, 6px rise | ease | visible immediately. The route wrapper does not use a forwards fill, so the rise does not leave a transform and dialogs stay fixed to the viewport. |
 | Tab underline | 350ms | `--ease` | jump to the selected tab |
 | KPI count-up | 900ms | easeOutCubic | final number |
 | Standings bars | 800ms, 50ms stagger | `--ease` | full width |

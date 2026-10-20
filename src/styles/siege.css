@@ -111,7 +111,7 @@ button.srch{text-align:left}
 .gchips button.a,.gchips a.a{background:var(--tx);color:#000;border-color:var(--tx)}
 .gchips a{white-space:nowrap;font-size:12px;border:1px solid var(--line);padding:5px 10px;border-radius:999px;color:var(--mut)}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.page{animation:fade .25s ease both}
+.page{animation:fade .25s ease}
 .rise{opacity:0;transform:translateY(8px);animation:up .45s var(--ease) forwards}
 .alert{animation:shake .3s ease}
 @keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
