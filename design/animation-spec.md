@@ -22,7 +22,7 @@ Guild series colors, in standings order: gold, `#7c8cff`, `#3ddc97`, `#ff8a65`, 
 
 ## Type
 
-- Inter (cv08 serif capital I, cv05 tailed l) with Noto Sans Thai as fallback, so Thai tone marks and Cyrillic letters that Inter does not cover still draw.
+- Self-hosted Inter variable (cv08 serif capital I, cv05 tailed l — the Google subset drops those glyphs) with Noto Sans Thai as fallback, so Thai tone marks and Cyrillic letters still draw.
 - `font-variant-numeric: tabular-nums` on stats.
 - Player names render every stored character. A trailing ` #` plus id is only visually de-emphasized. Guild `OracIe` stays `OracIe`. `Wazabz` and `Wazabz่` stay separate guilds.
 - Search may fold case, accents, and lookalikes (I/l/1, Cyrillic у/y, Thai tone marks) for matching. Folding never changes what is displayed or how stats are grouped.

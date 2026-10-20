@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import { useState, ChangeEvent, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
@@ -195,7 +196,7 @@ function Home() {
 
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
         <header className="text-center mb-8">
-          <img src="/images/logo.png" alt="Logo" className="w-48 md:w-64 mb-4 inline-block p-2" />
+          <Image src="/images/logo.png" alt="Flyff Universe Siege Stats" width={256} height={160} className="w-48 md:w-64 h-auto mb-4 inline-block p-2" />
           <p className="text-lg text-gray-600 mt-2">
             Upload your game log to see the stats
           </p>

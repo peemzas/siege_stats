@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Sans_Thai } from "next/font/google";
+import localFont from "next/font/local";
+import { Noto_Sans_Thai } from "next/font/google";
 import AppShell from "@/components/AppShell";
 import Providers from "./providers";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin", "latin-ext", "cyrillic", "cyrillic-ext"],
+const inter = localFont({
+  src: "../fonts/InterVariable.woff2",
   display: "swap",
   variable: "--font-inter",
+  weight: "100 900",
 });
 
 const thai = Noto_Sans_Thai({

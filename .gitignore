@@ -4,3 +4,4 @@ data
 .env.local
 .env
 .env.example
+tsconfig.tsbuildinfo
