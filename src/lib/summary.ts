@@ -29,7 +29,7 @@ const EMPTY: LogSummary = {
   kills: 0,
 };
 
-function asResult(value: unknown): Result | null {
+export function readResult(value: unknown): Result | null {
   let parsed = value;
   if (typeof parsed === "string") {
     try {
@@ -46,7 +46,7 @@ function asResult(value: unknown): Result | null {
 
 /** Reads a saved parse. Copies before sorting so the stored arrays stay in their original order. */
 export function summarizeParsed(value: unknown): LogSummary {
-  const result = asResult(value);
+  const result = readResult(value);
   if (!result) return EMPTY;
   const guilds = [...result.guildResults].sort((a, b) => b.totalPoints - a.totalPoints);
   const players = [...result.playerResults].sort((a, b) => b.totalPoints - a.totalPoints);

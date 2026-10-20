@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import CountUp from "./CountUp";
 import Meters from "./Meters";
@@ -7,7 +8,9 @@ import NameText from "./NameText";
 import { guildColor, kdRatio, type PlayerView } from "@/lib/siege";
 import { formatSiegeDate } from "@/lib/format";
 
-type Tab = "timeline" | "victims" | "killers";
+type Tab = "timeline" | "victims" | "killers" | "history";
+
+type HistoryRow = { logId: string; date: string; guild: string; place: number; points: number; kills: number; deaths: number };
 
 export default function PlayerSheet({
   player,
@@ -33,8 +36,26 @@ export default function PlayerSheet({
   onNext: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("timeline");
+  const [history, setHistory] = useState<HistoryRow[]>([]);
   const dialogRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ y: number } | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setHistory([]);
+    fetch(`/api/players/${encodeURIComponent(player.name)}?server=${encodeURIComponent(server)}`, { signal: controller.signal })
+      .then(async (response) => (response.ok ? response.json() : null))
+      .then((payload: { appearances?: HistoryRow[] } | null) => {
+        if (controller.signal.aborted) return;
+        const rows = payload?.appearances ?? [];
+        setHistory(rows.length > 1 ? rows : []);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setHistory([]);
+      });
+    return () => controller.abort();
+  }, [player.name, server]);
 
   useEffect(() => {
     setTab("timeline");
@@ -102,6 +123,11 @@ export default function PlayerSheet({
             </div>
             <h2><NameText name={player.name} /></h2>
             <span style={{ color: guildColor(guildIndex), fontWeight: 700 }}>⬢ {player.guild}</span>
+            <div>
+              <Link className="btn" href={`/players/${encodeURIComponent(player.name)}?server=${encodeURIComponent(server)}`} style={{ marginTop: 8 }}>
+                Profile
+              </Link>
+            </div>
           </div>
           <div style={{ display: "flex", gap: 6 }}>
             <button type="button" className="btn" onClick={onPrev} disabled={index === 0} aria-label="Previous player">←</button>
@@ -140,6 +166,11 @@ export default function PlayerSheet({
               {key === "timeline" ? "Timeline" : key === "victims" ? "Victims" : "Killers"}
             </span>
           ))}
+          {history.length > 1 ? (
+            <span role="tab" className={tab === "history" ? "a" : undefined} aria-selected={tab === "history"} onClick={() => setTab("history")} style={{ cursor: "pointer" }}>
+              History ({history.length})
+            </span>
+          ) : null}
         </div>
         {tab === "timeline" ? (
           <>
@@ -188,6 +219,18 @@ export default function PlayerSheet({
         ) : null}
         {tab === "killers" ? (
           <div className="box"><h3><span className="d">Killers</span><span className="num">{player.killers.length}</span></h3><Meters items={player.killers} tone="d" compact /></div>
+        ) : null}
+        {tab === "history" ? (
+          <div className="tbl">
+            {history.map((row) => (
+              <Link key={`${row.logId}-${row.date}`} className="row hist" href={`/logs/${row.logId}`}>
+                <span>{formatSiegeDate(row.date)}</span>
+                <span className="gn">{row.guild}</span>
+                <span className={`rk ${row.place < 4 ? `t${row.place}` : ""}`}>#{row.place}</span>
+                <b className="num">{row.points} pts</b>
+              </Link>
+            ))}
+          </div>
         ) : null}
       </div>
     </div>

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { Result } from "../app/api/types/log.type";
-import { searchKey, splitName } from "./names";
+import { decodeRouteName, searchKey, splitName } from "./names";
 import { deriveSiege, topByPoints } from "./siege";
 
 type Fixture = {
@@ -91,6 +91,9 @@ test("names stay exact while search folding stays match-only", () => {
   assert.ok(cyrillic);
   assert.equal(searchKey("GrindSky"), searchKey(cyrillic.name));
   assert.notEqual("GrindSky", cyrillic.name);
+  assert.equal(decodeRouteName("BNE%20%2314F93D"), "BNE #14F93D");
+  assert.equal(decodeRouteName("OracIe"), "OracIe");
+  assert.equal(decodeRouteName("Wazabz%E0%B9%88"), "Wazabz่");
 });
 
 test("deriveSiege matches the Lawolf 17 Oct sample and does not mutate it", () => {

@@ -21,6 +21,7 @@ import { LogEmpty, LogError, LogSkeleton } from "./LogStates";
 import Meters from "./Meters";
 import NameText from "./NameText";
 import PlayerSheet from "./PlayerSheet";
+import ShareDialog from "./ShareDialog";
 
 const TABS = [
   ["overview", "Overview"],
@@ -72,6 +73,7 @@ export default function LogView({ id }: { id: string }) {
   const [openGuilds, setOpenGuilds] = useState<string[]>([]);
   const [sheet, setSheet] = useState<{ list: PlayerView[]; index: number; life?: number } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
 
@@ -122,14 +124,8 @@ export default function LogView({ id }: { id: string }) {
     setSheet({ list, index, life });
   }
 
-  async function copyLink() {
-    const url = window.location.href;
-    try {
-      await navigator.clipboard.writeText(url);
-      setToast("✓ Link copied");
-    } catch {
-      setToast(url);
-    }
+  function showToast(message: string) {
+    setToast(message);
     window.setTimeout(() => setToast(null), 2200);
   }
 
@@ -146,7 +142,7 @@ export default function LogView({ id }: { id: string }) {
 
   return (
     <>
-      <Hero model={model} server={server} date={date} onShare={copyLink} />
+      <Hero model={model} server={server} date={date} onShare={() => setShareOpen(true)} />
       <div className="tabs" role="tablist" ref={tabsRef}>
         {TABS.map(([key, label]) => (
           <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => selectTab(key)}>
@@ -205,6 +201,9 @@ export default function LogView({ id }: { id: string }) {
           onPrev={() => setSheet((current) => current && current.index > 0 ? { ...current, index: current.index - 1, life: undefined } : current)}
           onNext={() => setSheet((current) => current && current.index < current.list.length - 1 ? { ...current, index: current.index + 1, life: undefined } : current)}
         />
+      ) : null}
+      {shareOpen ? (
+        <ShareDialog model={model} server={server} date={date} onClose={() => setShareOpen(false)} onToast={showToast} />
       ) : null}
       {toast ? <div className="toast" role="status">{toast}</div> : null}
     </>

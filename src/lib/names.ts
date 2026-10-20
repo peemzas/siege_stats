@@ -9,6 +9,16 @@ export function shortName(name: string): string {
   return splitName(name).base;
 }
 
+/** Route params may still contain %20 or %23. Decode once; leave the string if it is not encoded. */
+export function decodeRouteName(value: string): string {
+  if (!value.includes("%")) return value;
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 const LOOKALIKE: Record<string, string> = {
   I: "i",
   l: "i",
