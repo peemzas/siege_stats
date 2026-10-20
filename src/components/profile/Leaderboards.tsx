@@ -86,9 +86,11 @@ export default function Leaderboards() {
           <Meters
             tone="g"
             format={(value) => value.toFixed(2)}
-            items={board.attendance.map((row) => ({ label: `${row.label} · ${row.guilds}`, count: row.kd }))}
+            items={board.attendance.map((row) => ({ label: row.label, count: row.kd }))}
           />
-          <p className="mut" style={{ fontSize: 12, margin: "8px 0 0" }}>Average guild K/D by players fielded. A guild with no deaths is left out.</p>
+          <p className="mut" style={{ fontSize: 12, margin: "8px 0 0" }}>
+            {board.attendance.map((row) => `${row.label}: ${row.guilds} guilds`).join(" · ")}. Average of each guild’s K/D. A guild with no deaths is left out.
+          </p>
         </section>
       ) : null}
       {board && board.sieges > 0 && tab === "players" ? <PlayerTable server={server} rows={board.players} /> : null}
