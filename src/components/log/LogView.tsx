@@ -15,6 +15,8 @@ import {
   type SiegeModel,
 } from "@/lib/siege";
 import CountUp from "./CountUp";
+import HeadToHead from "./HeadToHead";
+import KillsChart from "./KillsChart";
 import { LogEmpty, LogError, LogSkeleton } from "./LogStates";
 import Meters from "./Meters";
 import NameText from "./NameText";
@@ -173,7 +175,7 @@ export default function LogView({ id }: { id: string }) {
             onOpenPlayer={(player) => openPlayer(model.players, player)}
           />
         ) : null}
-        {tab === "h2h" ? <Rivalries model={model} /> : null}
+        {tab === "h2h" ? <HeadToHead model={model} /> : null}
         {tab === "feed" ? (
           <Feed
             model={model}
@@ -268,15 +270,7 @@ function Overview({ model, onOpen }: { model: SiegeModel; onOpen: (player: Playe
   return (
     <>
       <div className="grid2">
-        <div className="card">
-          <h2 className="sec">Kills over time <span className="chip">{model.timeline.startLabel} → +{model.timeline.minutes}m</span></h2>
-          <p className="mut" style={{ marginTop: 0 }}>Cumulative kills for all {model.guilds.length} guilds. The line chart draws in on this tab.</p>
-          <div className="leg">
-            {model.timeline.series.map((series) => (
-              <span key={series.name}><i style={{ background: series.color }} />{series.name}</span>
-            ))}
-          </div>
-        </div>
+        <KillsChart timeline={model.timeline} />
         <div className="card">
           <h2 className="sec">Top players</h2>
           {model.topPlayers.map((player, index) => (
@@ -467,8 +461,8 @@ function Guilds({
                 <div className="det">
                   <div className="box">
                     <h3><span>Points</span><span className="num">{guild.totalPoints}</span></h3>
-                    <Meters tone="k" max={guild.totalPoints} items={[{ label: "From kills", count: guild.totalPointsFromKills }]} />
-                    <Meters tone="g" max={guild.totalPoints} items={[{ label: "Extra life", count: guild.totalExtraLifePoints }]} />
+                    <Meters active={expanded} tone="k" max={guild.totalPoints} items={[{ label: "From kills", count: guild.totalPointsFromKills }]} />
+                    <Meters active={expanded} tone="g" max={guild.totalPoints} items={[{ label: "Extra life", count: guild.totalExtraLifePoints }]} />
                     <div className="sub2">Top players</div>
                     {roster.map((player) => (
                       <button
@@ -477,15 +471,15 @@ function Guilds({
                         onClick={() => onOpenPlayer(player)}
                         style={{ display: "block", width: "100%", background: "none", border: 0, padding: 0, textAlign: "left" }}
                       >
-                        <Meters items={[{ label: player.name, count: player.points }]} tone="k" compact max={model.players[0]?.points || 1} />
+                        <Meters active={expanded} items={[{ label: player.name, count: player.points }]} tone="k" compact max={model.players[0]?.points || 1} />
                       </button>
                     ))}
                   </div>
                   <div className="box">
                     <h3><span className="k">Kills vs guild</span><span className="num">{guild.totalKills}</span></h3>
-                    <Meters items={kills} tone="k" />
+                    <Meters active={expanded} items={kills} tone="k" />
                     <div className="sub2">Killed by guild</div>
-                    <Meters items={deaths} tone="d" />
+                    <Meters active={expanded} items={deaths} tone="d" />
                   </div>
                 </div>
               </div>
@@ -493,23 +487,6 @@ function Guilds({
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function Rivalries({ model }: { model: SiegeModel }) {
-  return (
-    <div className="card">
-      <h2 className="sec">Top rivalries</h2>
-      {model.rivalries.slice(0, 8).map((pair) => (
-        <div className="sr" key={`${pair.a}-${pair.b}`} style={{ gridTemplateColumns: "minmax(0,1fr) auto auto minmax(0,1fr)" }}>
-          <b style={{ textAlign: "right" }}>{pair.a}</b>
-          <span className="num k">{pair.aKills}</span>
-          <span className="num d">{pair.bKills}</span>
-          <b>{pair.b}</b>
-        </div>
-      ))}
-      <p className="mut">Sorted by kills exchanged. The heatmap lands with the chart pass.</p>
     </div>
   );
 }
