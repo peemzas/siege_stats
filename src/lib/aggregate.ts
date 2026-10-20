@@ -64,9 +64,23 @@ export type PlayerProfile = PlayerRollup & {
   series: number[];
 };
 
+export type RivalPoint = {
+  logId: string;
+  date: string;
+  kills: number;
+};
+
+export type RivalSummary = {
+  name: string;
+  kills: number;
+  sieges: number;
+};
+
 export type GuildProfile = GuildRollup & {
   series: number[];
   places: number[];
+  opponents: RivalSummary[];
+  rival: { name: string; series: RivalPoint[] } | null;
 };
 
 export type SearchGroups = {
@@ -233,15 +247,68 @@ export function playerProfile(catalog: { players: PlayerRollup[] }, name: string
   };
 }
 
-export function guildProfile(catalog: { guilds: GuildRollup[] }, name: string, server: string): GuildProfile | null {
+export function guildProfile(
+  catalog: { guilds: GuildRollup[] },
+  name: string,
+  server: string,
+  sources: readonly SiegeSource[] = [],
+  versus?: string,
+): GuildProfile | null {
   const guild = catalog.guilds.find((item) => item.server === server && item.name === name);
   if (!guild) return null;
   const oldestFirst = [...guild.appearances].reverse();
+  const opponents = guildOpponents(sources, name);
+  const rivalName = versus || opponents[0]?.name || "";
   return {
     ...guild,
     series: oldestFirst.map((row) => row.points),
     places: oldestFirst.map((row) => row.place),
+    opponents: opponents.slice(0, 6),
+    rival: rivalName ? { name: rivalName, series: rivalrySeries(sources, name, rivalName) } : null,
   };
+}
+
+/** Exact guild names. `Wazabz` and `Wazabz่` stay different opponents. */
+export function guildOpponents(sources: readonly SiegeSource[], guildName: string): RivalSummary[] {
+  const totals = new Map<string, { kills: number; sieges: number }>();
+  for (const source of sources) {
+    const mine = readResult(source.parsed)?.guildResults.find((guild) => guild.name === guildName);
+    if (!mine) continue;
+    const seen = new Set<string>();
+    for (const kill of mine.kills ?? []) {
+      if (!kill.name || kill.name === guildName) continue;
+      const row = totals.get(kill.name) ?? { kills: 0, sieges: 0 };
+      row.kills += kill.count;
+      if (!seen.has(kill.name)) {
+        row.sieges += 1;
+        seen.add(kill.name);
+      }
+      totals.set(kill.name, row);
+    }
+  }
+  return [...totals.entries()]
+    .map(([name, row]) => ({ name, kills: row.kills, sieges: row.sieges }))
+    .sort((a, b) => b.kills - a.kills || b.sieges - a.sieges || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+}
+
+/** Last shared sieges, oldest first. A siege counts when both exact names fielded. */
+export function rivalrySeries(sources: readonly SiegeSource[], guildName: string, opponent: string, limit = 8): RivalPoint[] {
+  if (!guildName || !opponent || guildName === opponent) return [];
+  const points: RivalPoint[] = [];
+  for (const source of sources) {
+    const result = readResult(source.parsed);
+    if (!result) continue;
+    const mine = result.guildResults.find((guild) => guild.name === guildName);
+    const theirs = result.guildResults.find((guild) => guild.name === opponent);
+    if (!mine || !theirs) continue;
+    points.push({
+      logId: source.id,
+      date: source.logDate.slice(0, 10),
+      kills: mine.kills?.find((kill) => kill.name === opponent)?.count ?? 0,
+    });
+  }
+  points.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.logId < b.logId ? -1 : 1));
+  return points.slice(-limit);
 }
 
 export function playerBoard(players: readonly PlayerRollup[], server: string): PlayerRollup[] {

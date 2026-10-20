@@ -50,6 +50,7 @@ Every duration below is the running animation. `prefers-reduced-motion: reduce` 
 | Badge cards | 450ms rise, 50ms stagger | `--ease` | visible |
 | Momentum blocks | 450ms rise, 50ms stagger | `--ease` | visible |
 | Survival bars | 700ms, 40ms stagger | `--ease` | full width |
+| Rivalry history columns | 600ms scaleY, 40ms stagger | `--ease` | full height |
 | Row hover | 150ms | ease | color only |
 | Row expand + chevron | 300ms / 250ms | `--ease` | open instantly |
 | Life bars | 600ms scaleY, 40ms stagger | `--ease` | full height |
@@ -73,5 +74,6 @@ Pies are gone. Kill and death breakdowns are horizontal bars sorted by count. Ki
 
 - Duplicate upload is the same server and calendar date. The UI offers the existing siege and still allows "upload anyway". No schema change, no silent delete.
 - Cross-siege search, profiles, and leaderboards are read-only aggregates of `LogEntry.parsedData`. No new tables.
+- Rivalry history uses exact guild names. `Wazabz` and `Wazabz่` are separate series. A shared siege is one where both names fielded; the chart keeps the last 8, oldest on the left.
 - Season filters, class filters, player compare, POVs, and Thai/English i18n are deferred. `class` is empty in current data and is shown only when a non-empty class is stored.
 - Client preview uses the existing `parseAndProcessLog` function. Its return shape is unchanged.

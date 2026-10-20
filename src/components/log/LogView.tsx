@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Result } from "@/app/api/types/log.type";
+import type { RivalPoint } from "@/lib/aggregate";
 import { formatInt, formatSiegeDate } from "@/lib/format";
 import { searchKey } from "@/lib/names";
 import {
@@ -75,6 +76,7 @@ export default function LogView({ id }: { id: string }) {
   const [sheet, setSheet] = useState<{ list: PlayerView[]; index: number; life?: number } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [rivalFocus, setRivalFocus] = useState<{ a: string; b: string } | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
 
@@ -96,6 +98,18 @@ export default function LogView({ id }: { id: string }) {
     const result = coerceResult(query.data?.parsedData);
     return result ? deriveSiege(result) : null;
   }, [query.data]);
+  const focus = rivalFocus ?? (model?.rivalries[0] ? { a: model.rivalries[0].a, b: model.rivalries[0].b } : null);
+  const rivalry = useQuery({
+    queryKey: ["rivalry", query.data?.serverName, focus?.a, focus?.b],
+    enabled: tab === "h2h" && Boolean(focus?.a && focus?.b && query.data?.serverName),
+    queryFn: async (): Promise<RivalPoint[]> => {
+      const params = new URLSearchParams({ server: query.data?.serverName || "", versus: focus?.b || "" });
+      const response = await fetch(`/api/guilds/${encodeURIComponent(focus?.a || "")}?${params}`);
+      if (!response.ok) throw new Error("failed");
+      const body = await response.json() as { rival?: { series?: RivalPoint[] } | null };
+      return body.rival?.series ?? [];
+    },
+  });
 
   useEffect(() => {
     const place = () => {
@@ -172,7 +186,15 @@ export default function LogView({ id }: { id: string }) {
             onOpenPlayer={(player) => openPlayer(model.players, player)}
           />
         ) : null}
-        {tab === "h2h" ? <HeadToHead model={model} /> : null}
+        {tab === "h2h" ? (
+          <HeadToHead
+            model={model}
+            focus={focus}
+            history={rivalry.data ?? []}
+            historyLoading={rivalry.isLoading}
+            onFocus={setRivalFocus}
+          />
+        ) : null}
         {tab === "feed" ? (
           <Feed
             model={model}

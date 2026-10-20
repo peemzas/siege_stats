@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildCatalog, guildBoard, playerProfile, searchCatalog } from "./aggregate";
+import { buildCatalog, guildBoard, guildProfile, playerProfile, rivalrySeries, searchCatalog } from "./aggregate";
+import type { SiegeSource } from "./aggregate";
 import { discordText } from "./share";
 import type { SiegeModel } from "./siege";
 
@@ -64,6 +65,45 @@ test("catalog keeps OracIe and does not merge Wazabz with Wazabz่", () => {
   assert.equal(bne?.guild, "Wazabz่");
   assert.equal(bne?.appearances[0]?.date, "2026-10-17");
   assert.equal(playerProfile(catalog, "BNE #14F93D", "Mia"), null);
+});
+
+test("rivalry history keeps Wazabz and Wazabz่ apart", () => {
+  const meetings: [string, string, number][] = [
+    ["2026-07-11", "Wazabz่", 14],
+    ["2026-07-18", "Wazabz่", 8],
+    ["2026-08-08", "Wazabz่", 35],
+    ["2026-08-15", "Wazabz่", 84],
+    ["2026-08-29", "Wazabz", 120],
+    ["2026-09-05", "Wazabz่", 63],
+    ["2026-09-12", "Wazabz่", 74],
+    ["2026-09-19", "Wazabz", 39],
+    ["2026-09-26", "Wazabz", 71],
+    ["2026-10-03", "Wazabz่", 125],
+    ["2026-10-10", "Wazabz่", 52],
+    ["2026-10-17", "Wazabz่", 133],
+  ];
+  const sources: SiegeSource[] = meetings.map(([date, opponent, kills], index) => ({
+    id: `s${index}`,
+    logDate: date,
+    serverName: "Lawolf",
+    parsed: {
+      playerResults: [],
+      guildResults: [
+        guild("OracIe", 10, kills, 1),
+        guild(opponent, 9, 1, kills),
+      ].map((row, guildIndex) => ({
+        ...row,
+        kills: [{ name: guildIndex === 0 ? opponent : "OracIe", count: guildIndex === 0 ? kills : 1 }],
+      })),
+    },
+  }));
+  Object.freeze(sources);
+  assert.deepEqual(rivalrySeries(sources, "OracIe", "Wazabz่").map((point) => point.kills), [8, 35, 84, 63, 74, 125, 52, 133]);
+  assert.deepEqual(rivalrySeries(sources, "OracIe", "Wazabz").map((point) => point.kills), [120, 39, 71]);
+  const profile = guildProfile(buildCatalog(sources), "OracIe", "Lawolf", sources);
+  assert.equal(profile?.rival?.name, "Wazabz่");
+  assert.equal(profile?.opponents.some((opponent) => opponent.name === "Wazabz"), true);
+  assert.equal(profile?.opponents.some((opponent) => opponent.name === "Wazabz่"), true);
 });
 
 test("discord share text keeps stored names", () => {

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import CountUp from "@/components/log/CountUp";
+import RivalryHistory from "@/components/log/RivalryHistory";
 import TrendLine from "@/components/TrendLine";
 import { formatInt, formatSiegeDate } from "@/lib/format";
 import { kdRatio } from "@/lib/siege";
@@ -14,10 +15,13 @@ export default function GuildProfile({ name }: { name: string }) {
   const params = useSearchParams();
   const router = useRouter();
   const server = params.get("server") || GAME_SERVERS[0];
+  const versus = params.get("versus") || "";
   const query = useQuery({
-    queryKey: ["guild", server, name],
+    queryKey: ["guild", server, name, versus],
     queryFn: async (): Promise<GuildData> => {
-      const response = await fetch(`/api/guilds/${encodeURIComponent(name)}?server=${encodeURIComponent(server)}`);
+      const search = new URLSearchParams({ server });
+      if (versus) search.set("versus", versus);
+      const response = await fetch(`/api/guilds/${encodeURIComponent(name)}?${search}`);
       if (!response.ok) {
         const error = new Error("failed") as Error & { status?: number };
         error.status = response.status;
@@ -42,12 +46,13 @@ export default function GuildProfile({ name }: { name: string }) {
         <div className="card empty"><h3>Couldn’t load this guild</h3><button type="button" className="btn" onClick={() => void query.refetch()}>Try again</button></div>
       ) : null}
       {missing ? <div className="card empty"><h3>No saved sieges</h3><p>{name} has no parsed siege on {server}.</p></div> : null}
-      {query.data ? <GuildBody guild={query.data} /> : null}
+      {query.data ? <GuildBody guild={query.data} server={server} /> : null}
     </>
   );
 }
 
-function GuildBody({ guild }: { guild: GuildData }) {
+function GuildBody({ guild, server }: { guild: GuildData; server: string }) {
+  const router = useRouter();
   return (
     <>
       <section className="hero">
@@ -73,6 +78,23 @@ function GuildBody({ guild }: { guild: GuildData }) {
           </span>
         </div>
       </section>
+      {guild.opponents.length ? (
+        <>
+          <div className="gchips" style={{ marginBottom: 10 }}>
+            {guild.opponents.map((opponent) => (
+              <button
+                type="button"
+                key={opponent.name}
+                className={guild.rival?.name === opponent.name ? "a" : undefined}
+                onClick={() => router.replace(`/guilds/${encodeURIComponent(guild.name)}?server=${encodeURIComponent(server)}&versus=${encodeURIComponent(opponent.name)}`)}
+              >
+                {opponent.name}
+              </button>
+            ))}
+          </div>
+          {guild.rival ? <RivalryHistory guild={guild.name} opponent={guild.rival.name} series={guild.rival.series} /> : null}
+        </>
+      ) : null}
       <h2 className="sec">Appearances</h2>
       <div className="tbl">
         {guild.appearances.map((row) => (

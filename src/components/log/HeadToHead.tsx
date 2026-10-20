@@ -1,24 +1,44 @@
+import type { RivalPoint } from "@/lib/aggregate";
 import type { SiegeModel } from "@/lib/siege";
+import RivalryHistory from "./RivalryHistory";
 
-export default function HeadToHead({ model }: { model: SiegeModel }) {
+export default function HeadToHead({
+  model,
+  focus,
+  history,
+  historyLoading,
+  onFocus,
+}: {
+  model: SiegeModel;
+  focus: { a: string; b: string } | null;
+  history: RivalPoint[];
+  historyLoading: boolean;
+  onFocus: (pair: { a: string; b: string }) => void;
+}) {
   const guilds = model.guilds.map((guild) => guild.name);
   const maxCell = Math.max(1, ...guilds.flatMap((row) => guilds.map((column) => (row === column ? 0 : model.h2h[row]?.[column] ?? 0))));
   const pairs = model.rivalries.slice(0, 8);
   const peak = Math.max(1, ...pairs.flatMap((pair) => [pair.aKills, pair.bKills]));
 
   return (
+    <>
     <div className="grid2">
       <div className="card">
         <h2 className="sec">Top rivalries</h2>
         {pairs.map((pair) => (
-          <div className="riv" key={`${pair.a}-${pair.b}`}>
+          <button
+            type="button"
+            className={`riv${focus?.a === pair.a && focus?.b === pair.b ? " a" : ""}`}
+            key={`${pair.a}-${pair.b}`}
+            onClick={() => onFocus({ a: pair.a, b: pair.b })}
+          >
             <b style={{ textAlign: "right", overflowWrap: "anywhere" }}>{pair.a}</b>
             <span className="num r k">{pair.aKills}</span>
             <span className="bl" style={{ width: `${(pair.aKills / peak) * 100}%` }} />
             <span className="br" style={{ width: `${(pair.bKills / peak) * 100}%` }} />
             <span className="num d">{pair.bKills}</span>
             <b style={{ overflowWrap: "anywhere" }}>{pair.b}</b>
-          </div>
+          </button>
         ))}
       </div>
       <div className="card mx">
@@ -58,5 +78,7 @@ export default function HeadToHead({ model }: { model: SiegeModel }) {
         </table>
       </div>
     </div>
+    {focus ? <RivalryHistory guild={focus.a} opponent={focus.b} series={history} loading={historyLoading} /> : null}
+    </>
   );
 }
