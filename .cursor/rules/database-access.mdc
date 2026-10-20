@@ -1,0 +1,12 @@
+---
+description: How this app reaches Postgres, and the RLS choices that follow
+alwaysApply: true
+---
+
+# Database access
+
+Prisma is the only database client. Server routes use `DATABASE_URL`. On the hosted Supabase project that role is `postgres`: it owns `LogEntry`, `Character`, and `_prisma_migrations`, and `rolbypassrls` is true. This repo does not use supabase-js.
+
+Public pages upload, list, and open logs through `/api/upload`, `/api/logs`, and `/api/logs/[id]`. Those routes run as `postgres`, which bypasses row level security. Do not add `anon` or `authenticated` policies, and do not grant those roles access to these tables. A `USING (true)` policy is not a stand-in for the server role: `postgres` already bypasses RLS, and an always-true policy is a Supabase security warning.
+
+`_prisma_migrations` stays closed to `anon` and `authenticated`. The migrate role is the same `postgres` role, so it can still write that table.

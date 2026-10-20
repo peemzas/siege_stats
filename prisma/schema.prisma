@@ -10,6 +10,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// RLS is enabled in SQL. Prisma connects as the table owner, which bypasses it.
 model LogEntry {
   id         String   @id @default(uuid())
   createdAt  DateTime @default(now())
@@ -19,6 +20,7 @@ model LogEntry {
   serverName String
 }
 
+/// RLS is enabled in SQL. The app only reads this table, through Prisma.
 model Character {
   id         String   @id @default(uuid())
   createdAt  DateTime @default(now())
