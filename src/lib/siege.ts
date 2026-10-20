@@ -92,6 +92,13 @@ export type Timeline = {
   series: { name: string; color: string; values: number[] }[];
 };
 
+export type MomentumBlock = {
+  startLabel: string;
+  endLabel: string;
+  guild: string;
+  kills: number;
+};
+
 export type Rivalry = { a: string; aKills: number; b: string; bKills: number };
 
 export type SiegeModel = {
@@ -110,6 +117,7 @@ export type SiegeModel = {
   timeline: Timeline;
   badges: Badge[];
   topPlayers: PlayerView[];
+  momentum: MomentumBlock[];
 };
 
 function tally(map: Map<string, number>, key: string) {
@@ -243,7 +251,48 @@ export function deriveSiege(result: Result): SiegeModel {
     timeline: buildTimeline(guilds, feed),
     badges: buildBadges(players, feed),
     topPlayers: players.slice(0, 6),
+    momentum: buildMomentum(guilds, feed),
   };
+}
+
+function formatClock(total: number): string {
+  const seconds = ((total % 86400) + 86400) % 86400;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+/** Guild with the most kills in each clock-aligned 10-minute block. Ties go to the higher standing. */
+export function buildMomentum(guilds: readonly { name: string }[], feed: readonly FeedRow[]): MomentumBlock[] {
+  if (!feed.length) return [];
+  const counts = new Map<number, Map<string, number>>();
+  for (const row of feed) {
+    const block = Math.floor(row.seconds / 600) * 600;
+    const bucket = counts.get(block) ?? new Map<string, number>();
+    bucket.set(row.killerGuild, (bucket.get(row.killerGuild) ?? 0) + 1);
+    counts.set(block, bucket);
+  }
+  const order = new Map(guilds.map((guild, index) => [guild.name, index]));
+  const present = [...counts.keys()].sort((a, b) => a - b);
+  const blocks: MomentumBlock[] = [];
+  for (let start = present[0]; start <= present[present.length - 1]; start += 600) {
+    const bucket = counts.get(start);
+    if (!bucket) continue;
+    let guild = "";
+    let kills = -1;
+    let place = Number.POSITIVE_INFINITY;
+    for (const [name, count] of bucket) {
+      const rank = order.get(name) ?? Number.POSITIVE_INFINITY;
+      if (count > kills || (count === kills && rank < place)) {
+        guild = name;
+        kills = count;
+        place = rank;
+      }
+    }
+    if (!guild) continue;
+    blocks.push({ startLabel: formatClock(start), endLabel: formatClock(start + 600), guild, kills });
+  }
+  return blocks;
 }
 
 function buildTimeline(guilds: GuildStat[], feed: FeedRow[]): Timeline {

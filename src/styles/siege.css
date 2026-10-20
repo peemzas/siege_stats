@@ -35,6 +35,7 @@ h2.sec{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.
 .chart svg{width:100%;height:auto;display:block}.chart path.ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:draw 1.4s var(--ease) forwards}@keyframes draw{to{stroke-dashoffset:0}}
 .leg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;margin-top:8px}.leg span{display:inline-flex;align-items:center;gap:6px}.leg i{width:10px;height:3px;border-radius:2px;display:inline-block}
 /* badges */
+.mom{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.mom .blk{flex:1 0 120px;background:var(--card2);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:12px;padding:10px 12px;opacity:0;transform:translateY(8px);animation:up .45s var(--ease) forwards}.mom .blk small{display:block;color:var(--mut);font-size:11px}.mom .blk b{display:block;margin-top:4px;overflow-wrap:anywhere}.mom .blk .n{display:block;margin-top:2px;font-size:18px;font-weight:800}
 .badges{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.bdg{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px;opacity:0;transform:translateY(8px);animation:up .45s var(--ease) forwards}.bdg .ic{font-size:20px}.bdg small{display:block;font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin-top:4px}.bdg b{display:block;overflow-wrap:anywhere}.bdg span{font-size:12px;color:var(--mut)}
 @keyframes up{to{opacity:1;transform:none}}
 /* table */
@@ -100,8 +101,8 @@ textarea{width:100%;min-height:80px;background:var(--card2);border:1px solid var
  .pal{padding-top:0}.pal .box{width:100vw;border-radius:0 0 16px 16px}
 }
 @keyframes sheet{from{transform:translateY(100%)}}
-html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition:none!important}html.rm .bdg{opacity:1;transform:none}html.rm .chart path.ln{stroke-dashoffset:0}html.rm .mx td{opacity:1}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.bdg{opacity:1;transform:none}.chart path.ln{stroke-dashoffset:0}.mx td{opacity:1}}
+html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition:none!important}html.rm .bdg,html.rm .mom .blk{opacity:1;transform:none}html.rm .chart path.ln{stroke-dashoffset:0}html.rm .mx td{opacity:1}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.bdg,.mom .blk{opacity:1;transform:none}.chart path.ln{stroke-dashoffset:0}.mx td{opacity:1}}
 
 
 button,input,select,textarea{font:inherit;color:inherit}

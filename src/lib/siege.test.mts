@@ -67,6 +67,45 @@ function toResult(data: Fixture): Result {
   };
 }
 
+test("momentum ties go to the higher standing and keep both guild names", () => {
+  const result = toResult(fixture);
+  const model = deriveSiege({
+    guildResults: [
+      { ...result.guildResults[0], name: "OracIe", totalPoints: 10, totalKills: 1, totalDeaths: 0, playerCount: 1, kills: [], killedBy: [] },
+      { ...result.guildResults[0], name: "Wazabz่", totalPoints: 9, totalKills: 1, totalDeaths: 0, playerCount: 1, kills: [], killedBy: [] },
+    ],
+    playerResults: [
+      {
+        name: "A",
+        guildName: "Wazabz่",
+        rank: 1,
+        totalPoints: 1,
+        totalKills: 1,
+        totalDeaths: 0,
+        totalKillsEachGuild: [],
+        totalDeathsEachGuild: [],
+        kills: [],
+        killedBy: [],
+        lives: [{ kills: [{ timestamp: "20:21:00", playerName: "B", guildName: "OracIe" }] }],
+      },
+      {
+        name: "B",
+        guildName: "OracIe",
+        rank: 2,
+        totalPoints: 1,
+        totalKills: 1,
+        totalDeaths: 0,
+        totalKillsEachGuild: [],
+        totalDeathsEachGuild: [],
+        kills: [],
+        killedBy: [],
+        lives: [{ kills: [{ timestamp: "20:22:00", playerName: "A", guildName: "Wazabz่" }] }],
+      },
+    ],
+  });
+  assert.deepEqual(model.momentum, [{ startLabel: "20:20", endLabel: "20:30", guild: "OracIe", kills: 1 }]);
+});
+
 test("topByPoints does not sort the original array", () => {
   const guilds = [
     { name: "SkyFall", totalPoints: 181 },
@@ -128,6 +167,17 @@ test("deriveSiege matches the Lawolf 17 Oct sample and does not mutate it", () =
   assert.equal(model.timeline.minutes, 55);
   assert.equal(model.timeline.series[0].values.at(-1), 218);
   assert.equal(model.h2h["OracIe"]["Wazabz่"], 133);
+  assert.deepEqual(
+    model.momentum.map((block) => `${block.startLabel}–${block.endLabel} ${block.guild} ${block.kills}`),
+    [
+      "20:20–20:30 Wazabz่ 47",
+      "20:30–20:40 OracIe 46",
+      "20:40–20:50 OracIe 46",
+      "20:50–21:00 OracIe 40",
+      "21:00–21:10 Wazabz่ 38",
+      "21:10–21:20 Aegȋs 19",
+    ],
+  );
   assert.equal(model.rivalries[0].aKills + model.rivalries[0].bKills >= 242, true);
 
   const labels = model.badges.map((badge) => `${badge.label}:${badge.player}:${badge.detail}`);

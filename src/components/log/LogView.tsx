@@ -17,6 +17,7 @@ import {
 import CountUp from "./CountUp";
 import HeadToHead from "./HeadToHead";
 import KillsChart from "./KillsChart";
+import MomentumStrip from "./MomentumStrip";
 import { LogEmpty, LogError, LogSkeleton } from "./LogStates";
 import Meters from "./Meters";
 import NameText from "./NameText";
@@ -298,6 +299,7 @@ function Overview({ model, onOpen }: { model: SiegeModel; onOpen: (player: Playe
           ))}
         </div>
       </div>
+      <MomentumStrip blocks={model.momentum} guilds={model.guilds.map((guild) => guild.name)} />
       <h2 className="sec" style={{ marginTop: 20 }}>Siege badges <span className="chip">{model.badges.length} awarded</span></h2>
       <div className="badges">
         {model.badges.map((badge, index) => (
