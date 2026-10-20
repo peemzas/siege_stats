@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { parseAndProcessLog } from '../utils/parseLog';
 import { getCharactersByServer } from '@/lib/character';
+import { summarizeParsed } from '@/lib/summary';
 
 // POST /api/logs - Save a new log with date
 export async function POST(req: NextRequest) {
@@ -76,22 +77,15 @@ export async function GET(req: NextRequest) {
     // Query conditions
     const whereClause = serverName ? { serverName } : {};
     
-    // Get all logs or filter by serverName if provided
-    const logs = await prisma.logEntry.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        logDate: true,
-        serverName: true,
-      },
-      orderBy: {
-        logDate: 'desc',
-      },
-    });
-
-    // Group logs by serverName if no specific server is requested
+    // Group logs by serverName if no specific server is requested.
+    // The shape stays `{ servers: [{ name, count }] }`.
     if (!serverName) {
-      const serverGroups = logs.reduce((acc: Record<string, { count: number }>, log: any) => {
+      const logs = await prisma.logEntry.findMany({
+        where: whereClause,
+        select: { id: true, logDate: true, serverName: true },
+        orderBy: { logDate: 'desc' },
+      });
+      const serverGroups = logs.reduce((acc: Record<string, { count: number }>, log: { serverName: string | null }) => {
         const server = log.serverName || 'Unknown';
         if (!acc[server]) {
           acc[server] = { count: 0 };
@@ -99,16 +93,30 @@ export async function GET(req: NextRequest) {
         acc[server].count++;
         return acc;
       }, {});
-      
-      return NextResponse.json({ 
+
+      return NextResponse.json({
         servers: Object.keys(serverGroups).map(name => ({
           name,
           count: serverGroups[name].count
         }))
       });
     }
-    
-    return NextResponse.json(logs);
+
+    // A server list includes a small summary so the siege index can show a winner
+    // without sending the raw log or the full parse to the browser.
+    const logs = await prisma.logEntry.findMany({
+      where: whereClause,
+      select: { id: true, logDate: true, serverName: true, createdAt: true, parsedData: true },
+      orderBy: { logDate: 'desc' },
+    });
+
+    return NextResponse.json(logs.map((log) => ({
+      id: log.id,
+      logDate: log.logDate,
+      serverName: log.serverName,
+      createdAt: log.createdAt.toISOString(),
+      ...summarizeParsed(log.parsedData),
+    })));
   } catch (error) {
     console.error('Error retrieving logs:', error);
     return NextResponse.json(
