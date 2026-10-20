@@ -1,0 +1,17 @@
+---
+description: pstack loop for this repo — plan, slice, test, audit, check in, keep rules current
+alwaysApply: true
+---
+
+# pstack workflow
+
+Work in this loop. Do not skip a step because a previous turn already did it.
+
+1. **Plan.** Restate the outcome and the done check. Pick the smallest vertical slice that a user can see or that a test can fail. Name the files you expect to touch. If a product decision is ambiguous, an action leaves the machine (deploy, message, purchase, delete data), or a fix has already failed twice, stop and ask before continuing.
+2. **Slice.** Implement that slice only. Preserve stored player and guild names exactly. Do not change the log parser's output shape or delete saved data.
+3. **Test.** Run the slice's check: typecheck, lint, and the targeted test or browser pass for what just changed. A typecheck-only pass is not proof of a UI change.
+4. **Audit.** Read the diff as a reviewer. Look for in-place mutation, renamed display strings, motion that ignores `prefers-reduced-motion`, and states the slice claimed but did not render (loading, empty, error).
+5. **Check-in.** Commit the slice on its own with a message that says what the user can do now. Push the working branch. Keep one PR for the redesign unless the task says otherwise.
+6. **Keep rules updated.** When a decision, token, or animation timing is settled, record it in `.cursor/rules` or `design/animation-spec.md` so the next slice does not re-decide it.
+
+Model choices live in `.cursor/rules/pstack-models.mdc`.

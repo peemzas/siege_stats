@@ -1,0 +1,43 @@
+/* Siege Stats design tokens. Values match the approved mockup. */
+:root {
+  --bg: #0b0f16;
+  --card: #141a25;
+  --card2: #1a2130;
+  --line: #263044;
+  --tx: #e8ebf2;
+  --mut: #8b95a8;
+  --gold: #f5c451;
+  --silver: #c9d1dc;
+  --bronze: #d08a55;
+  --kill: #3ddc97;
+  --death: #ff6b6b;
+  --acc: #7c8cff;
+  --r: 14px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --spring: cubic-bezier(0.3, 1.6, 0.5, 1);
+  --font-sans: var(--font-inter), "Noto Sans Thai", system-ui, sans-serif;
+  --guild-0: #f5c451;
+  --guild-1: #7c8cff;
+  --guild-2: #3ddc97;
+  --guild-3: #ff8a65;
+  --guild-4: #c084fc;
+  --guild-5: #4dd0e1;
+  --guild-6: #f472b6;
+  --guild-7: #a3e635;
+  --guild-8: #94a3b8;
+  --dur-hover: 150ms;
+  --dur-fade: 200ms;
+  --dur-panel: 300ms;
+  --dur-tab: 350ms;
+  --dur-expand: 300ms;
+  --dur-chevron: 250ms;
+  --dur-bar: 700ms;
+  --dur-bar-stagger: 40ms;
+  --dur-count: 900ms;
+  --dur-draw: 1.4s;
+  --dur-badge: 450ms;
+  --dur-sheet: 320ms;
+  --dur-dialog: 280ms;
+  --dur-shimmer: 1.2s;
+}
