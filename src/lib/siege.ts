@@ -99,6 +99,12 @@ export type MomentumBlock = {
   kills: number;
 };
 
+export type SurvivalRow = {
+  guild: string;
+  seconds: number;
+  lives: number;
+};
+
 export type Rivalry = { a: string; aKills: number; b: string; bKills: number };
 
 export type SiegeModel = {
@@ -118,6 +124,7 @@ export type SiegeModel = {
   badges: Badge[];
   topPlayers: PlayerView[];
   momentum: MomentumBlock[];
+  survival: SurvivalRow[];
 };
 
 function tally(map: Map<string, number>, key: string) {
@@ -252,6 +259,7 @@ export function deriveSiege(result: Result): SiegeModel {
     badges: buildBadges(players, feed),
     topPlayers: players.slice(0, 6),
     momentum: buildMomentum(guilds, feed),
+    survival: buildSurvival(result.playerResults ?? []),
   };
 }
 
@@ -293,6 +301,45 @@ export function buildMomentum(guilds: readonly { name: string }[], feed: readonl
     blocks.push({ startLabel: formatClock(start), endLabel: formatClock(start + 600), guild, kills });
   }
   return blocks;
+}
+
+/**
+ * Mean seconds from the previous death, or from the opening minute, until the next death.
+ * The opening minute is the first logged event floored to the minute. Lives with no death are left out.
+ */
+export function buildSurvival(players: readonly { guildName: string; lives?: { kills?: { timestamp: string }[]; death?: { timestamp: string } }[] }[]): SurvivalRow[] {
+  let first = Number.POSITIVE_INFINITY;
+  const parsed = players.map((player) => ({
+    guild: player.guildName,
+    lives: (player.lives ?? []).map((life) => {
+      const death = life.death ? clock(life.death.timestamp) : null;
+      for (const kill of life.kills ?? []) {
+        const value = clock(kill.timestamp);
+        if (value != null && value < first) first = value;
+      }
+      if (death != null && death < first) first = death;
+      return { death };
+    }),
+  }));
+  if (!Number.isFinite(first)) return [];
+  const origin = Math.floor(first / 60) * 60;
+  const sums = new Map<string, { total: number; lives: number }>();
+  for (const player of parsed) {
+    let previous: number | null = null;
+    for (const life of player.lives) {
+      if (life.death != null) {
+        const row = sums.get(player.guild) ?? { total: 0, lives: 0 };
+        row.total += life.death - (previous ?? origin);
+        row.lives += 1;
+        sums.set(player.guild, row);
+      }
+      previous = life.death;
+    }
+  }
+  return [...sums.entries()]
+    .filter(([, row]) => row.lives > 0)
+    .map(([guild, row]) => ({ guild, seconds: Math.round(row.total / row.lives), lives: row.lives }))
+    .sort((a, b) => b.seconds - a.seconds || (a.guild < b.guild ? -1 : a.guild > b.guild ? 1 : 0));
 }
 
 function buildTimeline(guilds: GuildStat[], feed: FeedRow[]): Timeline {

@@ -67,6 +67,64 @@ function toResult(data: Fixture): Result {
   };
 }
 
+test("survival starts at the opening minute and keeps guild names apart", () => {
+  const model = deriveSiege({
+    guildResults: [
+      { name: "OracIe", rank: 1, playerCount: 1, totalPointsFromKills: 0, totalExtraLifePoints: 0, totalPoints: 2, totalKills: 1, totalDeaths: 1, kills: [], killedBy: [] },
+      { name: "Wazabz", rank: 2, playerCount: 1, totalPointsFromKills: 0, totalExtraLifePoints: 0, totalPoints: 1, totalKills: 0, totalDeaths: 1, kills: [], killedBy: [] },
+      { name: "Wazabz่", rank: 3, playerCount: 1, totalPointsFromKills: 0, totalExtraLifePoints: 0, totalPoints: 1, totalKills: 0, totalDeaths: 1, kills: [], killedBy: [] },
+    ],
+    playerResults: [
+      {
+        name: "A",
+        guildName: "OracIe",
+        rank: 1,
+        totalPoints: 1,
+        totalKills: 1,
+        totalDeaths: 2,
+        totalKillsEachGuild: [],
+        totalDeathsEachGuild: [],
+        kills: [],
+        killedBy: [],
+        lives: [
+          { kills: [{ timestamp: "20:20:45", playerName: "B", guildName: "Wazabz่" }], death: { timestamp: "20:22:00", playerName: "B", guildName: "Wazabz่" } },
+          { kills: [], death: { timestamp: "20:25:00", playerName: "B", guildName: "Wazabz่" } },
+        ],
+      },
+      {
+        name: "B",
+        guildName: "Wazabz",
+        rank: 2,
+        totalPoints: 1,
+        totalKills: 0,
+        totalDeaths: 1,
+        totalKillsEachGuild: [],
+        totalDeathsEachGuild: [],
+        kills: [],
+        killedBy: [],
+        lives: [{ kills: [], death: { timestamp: "20:21:00", playerName: "A", guildName: "OracIe" } }],
+      },
+      {
+        name: "C",
+        guildName: "Wazabz่",
+        rank: 3,
+        totalPoints: 1,
+        totalKills: 0,
+        totalDeaths: 1,
+        totalKillsEachGuild: [],
+        totalDeathsEachGuild: [],
+        kills: [],
+        killedBy: [],
+        lives: [{ kills: [], death: { timestamp: "20:24:00", playerName: "A", guildName: "OracIe" } }],
+      },
+    ],
+  });
+  assert.deepEqual(
+    model.survival.map((row) => `${row.guild}:${row.seconds}`),
+    ["Wazabz่:240", "OracIe:150", "Wazabz:60"],
+  );
+});
+
 test("momentum ties go to the higher standing and keep both guild names", () => {
   const result = toResult(fixture);
   const model = deriveSiege({
@@ -167,6 +225,10 @@ test("deriveSiege matches the Lawolf 17 Oct sample and does not mutate it", () =
   assert.equal(model.timeline.minutes, 55);
   assert.equal(model.timeline.series[0].values.at(-1), 218);
   assert.equal(model.h2h["OracIe"]["Wazabz่"], 133);
+  const survival = Object.fromEntries(model.survival.map((row) => [row.guild, row.seconds]));
+  assert.equal(survival["Aegȋs"], 441);
+  assert.equal(survival["OracIe"], 351);
+  assert.equal(survival["Nostalgia"], 212);
   assert.deepEqual(
     model.momentum.map((block) => `${block.startLabel}–${block.endLabel} ${block.guild} ${block.kills}`),
     [

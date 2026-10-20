@@ -300,6 +300,17 @@ function Overview({ model, onOpen }: { model: SiegeModel; onOpen: (player: Playe
         </div>
       </div>
       <MomentumStrip blocks={model.momentum} guilds={model.guilds.map((guild) => guild.name)} />
+      {model.survival.length ? (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h2 className="sec">Average survival <span className="chip">per life</span></h2>
+          <Meters
+            tone="g"
+            suffix="s"
+            items={model.survival.map((row) => ({ label: row.guild, count: row.seconds }))}
+          />
+          <p className="mut" style={{ fontSize: 12, margin: "8px 0 0" }}>Seconds from the opening minute, or the previous death, until the next death.</p>
+        </div>
+      ) : null}
       <h2 className="sec" style={{ marginTop: 20 }}>Siege badges <span className="chip">{model.badges.length} awarded</span></h2>
       <div className="badges">
         {model.badges.map((badge, index) => (

@@ -49,6 +49,7 @@ Every duration below is the running animation. `prefers-reduced-motion: reduce` 
 | Heatmap cells | 400ms fade, 25ms diagonal stagger | ease | opaque |
 | Badge cards | 450ms rise, 50ms stagger | `--ease` | visible |
 | Momentum blocks | 450ms rise, 50ms stagger | `--ease` | visible |
+| Survival bars | 700ms, 40ms stagger | `--ease` | full width |
 | Row hover | 150ms | ease | color only |
 | Row expand + chevron | 300ms / 250ms | `--ease` | open instantly |
 | Life bars | 600ms scaleY, 40ms stagger | `--ease` | full height |
