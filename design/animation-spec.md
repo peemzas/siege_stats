@@ -75,5 +75,6 @@ Pies are gone. Kill and death breakdowns are horizontal bars sorted by count. Ki
 - Duplicate upload is the same server and calendar date. The UI offers the existing siege and still allows "upload anyway". No schema change, no silent delete.
 - Cross-siege search, profiles, and leaderboards are read-only aggregates of `LogEntry.parsedData`. No new tables.
 - Rivalry history uses exact guild names. `Wazabz` and `Wazabz่` are separate series. A shared siege is one where both names fielded; the chart keeps the last 8, oldest on the left.
+- Attendance impact is the mean of each guild appearance's K/D on the selected server. Buckets are exactly 15 players, 12–14, and under 12. A guild with no deaths is left out. Pooled kills divided by pooled deaths is not the figure.
 - Season filters, class filters, player compare, POVs, and Thai/English i18n are deferred. `class` is empty in current data and is shown only when a non-empty class is stored.
 - Client preview uses the existing `parseAndProcessLog` function. Its return shape is unchanged.

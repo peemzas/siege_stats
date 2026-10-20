@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildCatalog, guildBoard, playerBoard, serverSpan } from "@/lib/aggregate";
+import { attendanceImpact, buildCatalog, guildBoard, playerBoard, serverSpan } from "@/lib/aggregate";
 import { loadSieges } from "@/lib/loadSieges";
 
 export async function GET(req: NextRequest) {
@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
         deaths: player.deaths,
         mvps: player.mvps,
       })),
+      attendance: attendanceImpact(sources.filter((source) => source.serverName === server)),
       guilds: guildBoard(catalog.guilds, server).map((guild) => ({
         name: guild.name,
         sieges: guild.sieges,

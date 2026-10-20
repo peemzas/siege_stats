@@ -323,6 +323,38 @@ export function guildBoard(guilds: readonly GuildRollup[], server: string): Guil
     .sort((a, b) => b.wins - a.wins || b.points - a.points || (a.name < b.name ? -1 : 1));
 }
 
+export type AttendanceBucket = {
+  label: string;
+  guilds: number;
+  kd: number;
+};
+
+const ATTENDANCE_BUCKETS: { label: string; match: (players: number) => boolean }[] = [
+  { label: "15 players", match: (players) => players === 15 },
+  { label: "12–14 players", match: (players) => players >= 12 && players <= 14 },
+  { label: "Under 12", match: (players) => players < 12 },
+];
+
+/** Mean of each guild's K/D, grouped by players fielded. Guilds with no deaths are left out. */
+export function attendanceImpact(sources: readonly SiegeSource[]): AttendanceBucket[] {
+  const ratios = ATTENDANCE_BUCKETS.map(() => [] as number[]);
+  for (const source of sources) {
+    const result = readResult(source.parsed);
+    if (!result) continue;
+    for (const guild of result.guildResults ?? []) {
+      if (!(guild.totalDeaths > 0)) continue;
+      const index = ATTENDANCE_BUCKETS.findIndex((bucket) => bucket.match(guild.playerCount));
+      if (index < 0) continue;
+      ratios[index].push(guild.totalKills / guild.totalDeaths);
+    }
+  }
+  return ATTENDANCE_BUCKETS.map((bucket, index) => {
+    const values = ratios[index];
+    const average = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+    return { label: bucket.label, guilds: values.length, kd: Math.round(average * 100) / 100 };
+  });
+}
+
 export function serverSpan(sources: readonly SiegeSource[], server: string): { count: number; from: string; to: string } {
   const dates = sources
     .filter((source) => source.serverName === server)

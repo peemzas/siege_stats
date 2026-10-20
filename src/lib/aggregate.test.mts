@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildCatalog, guildBoard, guildProfile, playerProfile, rivalrySeries, searchCatalog } from "./aggregate";
+import { attendanceImpact, buildCatalog, guildBoard, guildProfile, playerProfile, rivalrySeries, searchCatalog } from "./aggregate";
 import type { SiegeSource } from "./aggregate";
 import { discordText } from "./share";
 import type { SiegeModel } from "./siege";
@@ -104,6 +104,33 @@ test("rivalry history keeps Wazabz and Wazabz่ apart", () => {
   assert.equal(profile?.rival?.name, "Wazabz่");
   assert.equal(profile?.opponents.some((opponent) => opponent.name === "Wazabz"), true);
   assert.equal(profile?.opponents.some((opponent) => opponent.name === "Wazabz่"), true);
+});
+
+test("attendance K/D is the mean ratio in each fielded-size bucket", () => {
+  const sized = (name: string, players: number, kills: number, deaths: number) => ({
+    ...guild(name, 1, kills, deaths),
+    playerCount: players,
+  });
+  const sources: SiegeSource[] = [{
+    id: "a",
+    logDate: "2026-10-17",
+    serverName: "Lawolf",
+    parsed: {
+      playerResults: [],
+      guildResults: [
+        sized("OracIe", 15, 23, 20),
+        sized("Wazabz่", 15, 23, 20),
+        sized("Aegȋs", 14, 131, 100),
+        sized("Wazabz", 9, 2, 5),
+        sized("SkyFall", 15, 50, 0),
+      ],
+    },
+  }];
+  assert.deepEqual(attendanceImpact(sources), [
+    { label: "15 players", guilds: 2, kd: 1.15 },
+    { label: "12–14 players", guilds: 1, kd: 1.31 },
+    { label: "Under 12", guilds: 1, kd: 0.4 },
+  ]);
 });
 
 test("discord share text keeps stored names", () => {

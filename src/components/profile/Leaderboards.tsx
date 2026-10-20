@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import Meters from "@/components/log/Meters";
 import NameText from "@/components/log/NameText";
 import { formatInt, formatSiegeDate } from "@/lib/format";
 import { useServers } from "@/components/home/useSieges";
@@ -16,6 +17,7 @@ type Board = {
   to: string;
   players: { name: string; guild: string; sieges: number; points: number; kills: number; deaths: number; mvps: number }[];
   guilds: { name: string; sieges: number; wins: number; points: number; avgPlace: number; form: number[] }[];
+  attendance: { label: string; guilds: number; kd: number }[];
 };
 
 export default function Leaderboards() {
@@ -77,6 +79,17 @@ export default function Leaderboards() {
       ) : null}
       {board && board.sieges === 0 ? (
         <div className="card empty"><h3>No sieges for {server} yet</h3><Link className="btn pri" href="/?upload=1">↑ Upload a log</Link></div>
+      ) : null}
+      {board && board.sieges > 0 && board.attendance?.some((row) => row.guilds > 0) ? (
+        <section className="card" style={{ marginBottom: 16 }} aria-label="Attendance impact">
+          <h2 className="sec">Attendance impact <span className="chip">{server}</span></h2>
+          <Meters
+            tone="g"
+            format={(value) => value.toFixed(2)}
+            items={board.attendance.map((row) => ({ label: `${row.label} · ${row.guilds}`, count: row.kd }))}
+          />
+          <p className="mut" style={{ fontSize: 12, margin: "8px 0 0" }}>Average guild K/D by players fielded. A guild with no deaths is left out.</p>
+        </section>
       ) : null}
       {board && board.sieges > 0 && tab === "players" ? <PlayerTable server={server} rows={board.players} /> : null}
       {board && board.sieges > 0 && tab === "guilds" ? <GuildTable server={server} rows={board.guilds} /> : null}
